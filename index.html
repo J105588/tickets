@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>組選択</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <div id="main-content">
+    <header class="page-header">
+      <button class="menu-btn" onclick="toggleSidebar()">&#9776;</button>
+      <h1>組選択</h1>
+    </header>
+
+    <main class="container">
+      <p class="description">管理する組または演劇を選択してください。</p>
+      <div class="grid-container">
+        <a class="grid-item" href="timeslot.html?group=1">1組</a>
+        <a class="grid-item" href="timeslot.html?group=2">2組</a>
+        <a class="grid-item" href="timeslot.html?group=3">3組</a>
+        <a class="grid-item" href="timeslot.html?group=4">4組</a>
+        <a class="grid-item" href="timeslot.html?group=5">5組</a>
+        <a class="grid-item" href="timeslot.html?group=6">6組</a>
+        <a class="grid-item" href="timeslot.html?group=7">7組</a>
+        <a class="grid-item" href="timeslot.html?group=8">8組</a>
+        <a class="grid-item" href="timeslot.html?group=見本演劇">見本演劇</a>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { loadSidebar, toggleSidebar, showModeChangeModal } from './sidebar.js';
+
+    loadSidebar();
+
+    // グローバルスコープに関数を登録
+    window.toggleSidebar = toggleSidebar;
+    window.showModeChangeModal = showModeChangeModal; // showModeChangeModalを登録
+  </script>
+</body>
+</html>

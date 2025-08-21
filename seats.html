@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>座席選択</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="seats.css">
+</head>
+<body>
+
+    <div id="sidebar-container"></div>
+
+    <div id="main-content">
+        <div class="page-header">
+            <span id="menu-btn" class="menu-btn">&#9776;</span>
+            <div class="header-title-container">
+                <h1>座席選択</h1>
+                <p><span id="performance-info"></span></p>
+            </div>
+            <div id="admin-indicator" class="admin-mode-indicator" style="display: none;">管理者モード</div>
+        </div>
+
+        <div class="container">
+            <button id="admin-login-btn" class="admin-login-btn" onclick="promptForAdminPassword()">管理者ログイン</button>
+
+            <main>
+                <div class="screen">舞台</div>
+                <div id="seat-map-container" class="seat-map-container"></div>
+                <div class="legend">
+                    <div class="legend-item"><span class="seat-indicator" style="background: #28a745;"></span>&nbsp;予約可能</div>
+                    <div class="legend-item"><span class="seat-indicator" style="background: #007bff;"></span>&nbsp;選択中</div>
+                    <div class="legend-item"><span class="seat-indicator" style="background: #ffc107;"></span>&nbsp;確保/予約済</div>
+                    <div class="legend-item"><span class="seat-indicator" style="background: #dc3545;"></span>&nbsp;要チェックイン</div>
+                    <div class="legend-item"><span class="seat-indicator" style="background: #6c757d;"></span>&nbsp;チェックイン済</div>
+                    <div class="legend-item"><span class="seat-indicator" style="background: #e9ecef;"></span>&nbsp;設定なし</div>
+                </div>
+                <button id="submit-button" class="submit-button" onclick="confirmReservation()">この席で予約する</button>
+                <button id="check-in-selected-btn" class="submit-button" onclick="checkInSelected()" style="display:none;">選択した座席をチェックイン</button>
+            </main>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="sidebar.js"></script>
+    <script type="module" src="seats-main.js"></script>
+
+    <script type="module">
+      // sidebar.jsから必要な関数をインポート
+      import { toggleSidebar, showModeChangeModal } from './sidebar.js';
+      // グローバルスコープに関数を登録
+      window.toggleSidebar = toggleSidebar;
+      window.showModeChangeModal = showModeChangeModal;
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+.page-header {
+  justify-content: flex-start;
+}
+
+.header-title-container {
+  text-align: center;
+  flex-grow: 1;
+}
+
+.header-title-container h1,
+.header-title-container p {
+  margin: 0;
+}
+
+.walkin-card {
+  text-align: center;
+}
+
+.walkin-button {
+  width: 100%;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background-color: #28a745;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.walkin-button:hover {
+  background-color: #218838;
+}
+
+.walkin-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.reservation-result {
+  margin-top: 30px;
+  padding: 30px;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px solid #28a745;
+  display: none;
+}
+
+.reservation-result.show {
+  display: block;
+}
+
+.reserved-seat {
+  font-size: 48px;
+  font-weight: bold;
+  color: #28a745;
+  margin: 20px 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.reservation-title {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.reservation-details {
+  font-size: 16px;
+  color: #666;
+  margin-top: 15px;
+}

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>時間帯選択</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <div id="main-content">
+    <header class="page-header">
+      <button class="menu-btn" onclick="toggleSidebar()">&#9776;</button>
+      <h1><span id="group-name"></span> 時間帯選択</h1>
+    </header>
+
+    <main class="container">
+      <div id="timeslot-container">
+        <div class="loading">時間帯データを読み込み中...</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script type="module" src="timeslot-main.js"></script>
+</body>
+</html>

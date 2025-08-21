@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>当日券発行</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="walkin.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <span class="menu-btn" onclick="toggleSidebar()">&#9776;</span>
+      <div class="header-title-container">
+        <h1>当日券 発行</h1>
+      </div>
+    </div>
+    
+    <div class="container">
+      <div class="card walkin-card">
+        <p>公演：<span id="performance-info"></span></p>
+        <p class="description">下のボタンを押すと、現在空いている席の中から1席を自動で確保します。</p>
+        <button id="walkin-btn" class="walkin-button" onclick="issueWalkinTicket()">空席を探して当日券を発行する</button>
+      </div>
+      
+      <div id="reservation-result" class="reservation-result">
+        <div class="reservation-title">当日券発行完了</div>
+        <div id="reserved-seat" class="reserved-seat"></div>
+        <div class="reservation-details" id="reservation-details"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="text-align: center;">
+      <div class="spinner"></div>
+      <p>処理中です...</p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="walkin-main.js"></script>
+</body>
+</html>
