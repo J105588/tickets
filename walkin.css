@@ -1,0 +1,317 @@
+.page-header {
+  justify-content: flex-start;
+}
+
+.header-title-container {
+  text-align: center;
+  flex-grow: 1;
+}
+
+.header-title-container h1,
+.header-title-container p {
+  margin: 0;
+}
+
+.walkin-card {
+  text-align: center;
+}
+
+.walkin-button {
+  width: 100%;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background-color: #28a745;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.walkin-button:hover {
+  background-color: #218838;
+}
+
+.walkin-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.walkin-button.disabled-mode {
+  background-color: #6c757d !important;
+  color: #adb5bd !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.reservation-result {
+  margin-top: 30px;
+  padding: 30px;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px solid #28a745;
+  display: none;
+}
+
+.reservation-result.show {
+  display: block;
+}
+
+.reserved-seat {
+  font-size: 48px;
+  font-weight: bold;
+  color: #28a745;
+  margin: 20px 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.reservation-title {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.reservation-details {
+  font-size: 16px;
+  color: #666;
+  margin-top: 15px;
+}
+
+/* Walk-in quantity selector */
+.walkin-qty-row {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.walkin-qty-label {
+  font-size: 18px;
+}
+
+.walkin-qty {
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid #28a745;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  width: 56px;
+  min-height: 56px;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qty-btn:active {
+  filter: brightness(0.9);
+}
+
+.qty-input {
+  width: 92px;
+  text-align: center;
+  font-size: 24px;
+  border: none;
+  outline: none;
+}
+
+/* Remove spinners on number input for better UX */
+input.qty-input::-webkit-outer-spin-button,
+input.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input.qty-input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* 成功・エラー通知 */
+.success-notification,
+.error-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.success-notification {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.error-notification {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.notification-content {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .success-notification,
+  .error-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .notification-content {
+    padding: 12px 16px;
+  }
+  
+  .notification-message {
+    font-size: 13px;
+  }
+}
+
+/* walkin actions */
+.walkin-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  justify-items: center;
+}
+
+/* Ensure the primary button is centered and readable */
+#walkin-open-modal-btn.walkin-button.primary {
+  width: 100%;
+  max-width: 600px;
+  font-size: 18px;
+  padding: 18px 24px;
+  background: #28a745;
+  border-color: #28a745;
+}
+
+#walkin-open-modal-btn.walkin-button.primary:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.walkin-button.primary,
+.walkin-button.secondary {
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.walkin-button.primary {
+  background: #007bff;
+  color: #fff;
+}
+.walkin-button.primary:active { opacity: .9; }
+
+.walkin-button.secondary {
+  background: #6c757d;
+  color: #fff;
+}
+.walkin-button.secondary:active { opacity: .9; }
+
+@media (min-width: 480px) {
+  .walkin-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* walkin option modal buttons */
+.walkin-option-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* モーダル内の選択肢ボタンの色 */
+.walkin-option-buttons .walkin-button.primary {
+  background: #007bff;
+  border-color: #007bff;
+}
+
+.walkin-option-buttons .walkin-button.primary:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.walkin-option-buttons .walkin-button.secondary {
+  background: #fd7e14;
+  border-color: #fd7e14;
+}
+
+.walkin-option-buttons .walkin-button.secondary:hover {
+  background: #e8690b;
+  border-color: #e8690b;
+}
+
+@media (min-width: 480px) {
+  .walkin-option-buttons { grid-template-columns: 1fr 1fr; }
+}

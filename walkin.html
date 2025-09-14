@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>座席管理システム - 当日券発行</title>
+  <meta name="description" content="当日券の発行を行います">
+  <meta name="theme-color" content="#007bff">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="座席管理システム">
+  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="152x152" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="144x144" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="120x120" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="114x114" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="76x76" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="72x72" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="60x60" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="57x57" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <meta name="msapplication-TileColor" content="#007bff">
+  <meta name="msapplication-config" content="browserconfig.xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="walkin.css">
+  <link rel="stylesheet" href="offline-sync-v2.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <!-- オフライン状態インジケーター -->
+  <div id="offline-indicator" class="offline-indicator" style="display: none;">オフライン</div>
+
+  <!-- 同期進行状況バー -->
+  <div id="sync-progress-bar" class="sync-progress-bar" style="display: none;">
+    <div class="progress"></div>
+  </div>
+
+  <!-- URL管理システム情報表示 -->
+  <div id="url-info" class="url-info" style="display: none;">
+    <div class="url-info-content">
+      <span id="url-info-text">API URL: 1/1</span>
+      <button id="url-refresh-btn" onclick="refreshUrlInfo()" title="URL情報を更新">更新</button>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <span class="menu-btn" onclick="toggleSidebar()">&#9776;</span >
+      <div class="header-title-container">
+        <h1>当日券 発行</h1>
+      </div>
+    </div>
+    
+    <div class="container">
+      <div class="card walkin-card">
+        <p>公演：<span id="performance-info"></span></p>
+        <p class="description">下のボタンを押すと、現在空いている席の中から1席を自動で確保します。</p>
+        <div class="walkin-qty-row">
+          <label for="walkin-count" class="walkin-qty-label">枚数</label>
+          <div class="walkin-qty">
+            <button type="button" class="qty-btn" id="qty-decrease" aria-label="減らす">−</button>
+            <input id="walkin-count" class="qty-input" type="number" inputmode="numeric" min="1" max="6" value="1" />
+            <button type="button" class="qty-btn" id="qty-increase" aria-label="増やす">＋</button>
+          </div>
+        </div>
+        <div class="walkin-actions">
+          <button id="walkin-open-modal-btn" class="walkin-button primary disabled-mode" onclick="openWalkinOptionModal()" disabled>当日券モードでログインしてください</button>
+        </div>
+      </div>
+      
+      <div id="reservation-result" class="reservation-result">
+        <div class="reservation-title">当日券発行完了</div>
+        <div id="reserved-seat" class="reserved-seat"></div>
+        <div class="reservation-details" id="reservation-details"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-modal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <div class="spinner"></div>
+      <p>処理中です...</p>
+    </div>
+  </div>
+
+  <!-- 同期中モーダル -->
+  <div id="sync-modal" class="modal">
+    <div class="modal-content" style="text-align: center; max-width: 400px;">
+      <div class="spinner"></div>
+      <h3>オフライン操作を同期中...</h3>
+      <p>しばらくお待ちください。操作はできません。</p>
+    </div>
+  </div>
+
+  <div id="error-container" class="error-container" style="display: none;">
+    <div class="error-content">
+      <p id="error-message">エラーが発生しました</p>
+      <div class="error-buttons">
+        <button onclick="history.back()">戻る</button>
+        <button onclick="location.reload()">再読み込み</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="walkin-option-modal" class="modal">
+    <div class="modal-content" style="max-width:480px;">
+      <h3>発行方法を選択</h3>
+      <p style="color:#555;margin-top:0;">指定した枚数の座席の確保方法を選んでください。</p>
+      <div class="walkin-option-buttons">
+        <button class="walkin-button primary" onclick="issueWalkinConsecutive()">一緒（同一行の連続席で確保）</button>
+        <button class="walkin-button secondary" onclick="issueWalkinAnywhere()">どこでもよい（ランダム）</button>
+      </div>
+      <div style="text-align:right;margin-top:12px;">
+        <button class="walkin-button secondary" onclick="closeWalkinOptionModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最適化されたスクリプトローダー -->
+  <script type="module" src="optimized-loader.js"></script>
+  <script type="module" src="api-cache.js"></script>
+  <script type="module" src="optimized-api.js"></script>
+  <script type="module" src="ui-optimizer.js"></script>
+  
+  <!-- 既存のスクリプト（最適化されたローダーが管理） -->
+  <script type="module" src="walkin-main.js"></script>
+  
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+            
+            // 更新チェック
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // 新しい更新が利用可能
+                  showUpdateNotification();
+                }
+              });
+            });
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // Service Workerからのリロードメッセージを処理
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'RELOAD') {
+          window.location.reload();
+        }
+      });
+    }
+
+    // 更新通知を表示
+    function showUpdateNotification() {
+      const notification = document.createElement('div');
+      notification.className = 'update-notification';
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 350px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: slideInRight 0.3s ease-out;
+      `;
+
+      notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 18px;">🔄</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; margin-bottom: 4px;">更新が利用可能です</div>
+            <div style="font-size: 12px; opacity: 0.9;">新しいバージョンに更新しますか？</div>
+          </div>
+          <button onclick="applyUpdate()" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+            更新
+          </button>
+          <button onclick="this.parentElement.parentElement.remove()" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='none'">
+            ×
+          </button>
+        </div>
+      `;
+
+      // アニメーション用のCSS
+      if (!document.getElementById('update-notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'update-notification-styles';
+        style.textContent = `
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(notification);
+
+      // 10秒後に自動で消す
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      }, 10000);
+    }
+
+    // 更新を適用
+    function applyUpdate() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(registration => {
+          if (registration && registration.waiting) {
+            // 新しいService Workerに更新を指示
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      }
+    }
+
+    // URL管理システムの情報表示機能
+    function refreshUrlInfo() {
+      if (window.GasAPI && window.GasAPI.getUrlManagerInfo) {
+        // 現在のURL情報を取得
+        const oldInfo = window.GasAPI.getUrlManagerInfo();
+        console.log('[URL Refresh] 更新前URL情報:', oldInfo);
+        
+        // ランダムURL選択を実行
+        if (window.GasAPI.selectRandomUrl) {
+          const newInfo = window.GasAPI.selectRandomUrl();
+          console.log('[URL Refresh] 更新後URL情報:', newInfo);
+          
+          // URL情報表示を更新
+          const urlInfoText = document.getElementById('url-info-text');
+          if (urlInfoText) {
+            urlInfoText.textContent = `API URL: ${newInfo.index}/${newInfo.total}`;
+          }
+          
+          // URL変更アニメーションを表示
+          if (window.showUrlChangeAnimation) {
+            console.log('[Walkin HTML] アニメーション表示実行');
+            window.showUrlChangeAnimation(oldInfo.url, newInfo.url, 'random');
+          } else {
+            console.warn('[Walkin HTML] showUrlChangeAnimation 関数が見つかりません');
+            // フォールバック: 直接アニメーション関数を定義
+            showUrlChangeAnimationFallback(oldInfo.url, newInfo.url, 'random');
+          }
+        } else {
+          // フォールバック: 情報のみ更新
+          const info = window.GasAPI.getUrlManagerInfo();
+          const urlInfoText = document.getElementById('url-info-text');
+          if (urlInfoText) {
+            urlInfoText.textContent = `API URL: ${info.index}/${info.total}`;
+          }
+          console.log('URL管理システム情報:', info);
+        }
+      }
+    }
+
+    // フォールバック用のアニメーション関数
+    function showUrlChangeAnimationFallback(oldUrl, newUrl, changeType = 'rotation') {
+      console.log('[Fallback Animation] アニメーション表示開始:', { oldUrl, newUrl, changeType });
+      
+      // 通知要素を作成
+      const notification = document.createElement('div');
+      notification.className = 'url-change-notification';
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 90vw;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+      `;
+
+      // アイコンとメッセージを設定
+      const icon = changeType === 'rotation' ? '↻' : '⚡';
+      const message = changeType === 'rotation' ? 'API URL ローテーション' : 'API URL ランダム選択';
+      
+      // スクリプトIDを抽出（/macros/s/以降の部分）
+      const scriptId = newUrl.split('/macros/s/')[1]?.split('/')[0] || 'unknown';
+      const displayId = scriptId.substring(0, 8) + '...';
+      
+      notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px; font-weight: bold;">${icon}</span>
+          <span>${message}</span>
+          <span style="opacity: 0.8; font-size: 12px;">(${displayId})</span>
+        </div>
+      `;
+
+      // 通知表示用のCSS
+      if (!document.getElementById('url-change-animation-styles')) {
+        const style = document.createElement('style');
+        style.id = 'url-change-animation-styles';
+        style.textContent = `
+          @keyframes slideInDown {
+            from {
+              opacity: 0;
+              transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(-50%) translateY(0);
+            }
+          }
+          @keyframes slideOutUp {
+            from {
+              opacity: 1;
+              transform: translateX(-50%) translateY(0);
+            }
+            to {
+              opacity: 0;
+              transform: translateX(-50%) translateY(-20px);
+            }
+          }
+          .url-change-notification {
+            animation: slideInDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+          .url-change-notification.hiding {
+            animation: slideOutUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      // 通知を表示
+      console.log('[Fallback Animation] 通知要素をDOMに追加');
+      document.body.appendChild(notification);
+
+      // アニメーション開始
+      console.log('[Fallback Animation] アニメーション開始');
+      requestAnimationFrame(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(-50%) translateY(0)';
+        console.log('[Fallback Animation] アニメーション適用完了');
+      });
+
+      // 3秒後に自動で消す
+      setTimeout(() => {
+        notification.classList.add('hiding');
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      }, 3000);
+
+      // クリックで即座に消す
+      notification.addEventListener('click', () => {
+        notification.classList.add('hiding');
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      });
+    }
+
+    // ページ読み込み時にURL情報を表示
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (window.GasAPI && window.GasAPI.getUrlManagerInfo) {
+          const info = window.GasAPI.getUrlManagerInfo();
+          const urlInfo = document.getElementById('url-info');
+          const urlInfoText = document.getElementById('url-info-text');
+          
+          if (urlInfo && urlInfoText) {
+            urlInfoText.textContent = `API URL: ${info.index}/${info.total}`;
+            urlInfo.style.display = 'block';
+          }
+        }
+      }, 1000); // 1秒後に表示（API読み込み完了を待つ）
+    });
+  </script>
+</body>
+</html>

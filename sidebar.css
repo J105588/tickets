@@ -1,0 +1,249 @@
+.sidebar {
+  height: 100%;
+  width: 250px;
+  position: fixed;
+  z-index: 200;
+  top: 0;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  transform: translateX(-260px);
+  transition: transform 0.3s ease;
+  padding-top: 60px;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 18px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+}
+
+.sidebar a:hover {
+  color: #f1f1f1;
+}
+
+.sidebar .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+#main-content {
+  min-height: 100vh;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 150;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mode-section {
+  margin-top: 30px;
+  padding: 20px;
+  border-top: 1px solid #333;
+}
+
+.mode-title {
+  color: #818181;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.current-mode {
+  color: #f1f1f1;
+  font-size: 16px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+.change-mode-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.change-mode-btn:hover {
+  background-color: #0056b3;
+}
+
+.navigation-section {
+  margin-top: 20px;
+  padding: 20px;
+  border-top: 1px solid #333;
+}
+
+.nav-title {
+  color: #818181;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-link {
+  color: #f1f1f1 !important;
+  font-size: 16px !important;
+  padding: 10px 0 !important;
+  margin: 5px 0;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff !important;
+  transform: translateX(5px);
+}
+
+.debug-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+}
+
+.debug-btn {
+    width: 100%;
+    padding: 4px 8px;
+    background: none;
+    color: #888;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    text-decoration: underline;
+    text-align: left;
+}
+
+.debug-btn:hover {
+    color: #666;
+    text-decoration: none;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.mode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mode-option:hover {
+  background-color: #f5f5f5;
+}
+
+.mode-option input {
+  margin-right: 10px;
+}
+
+.mode-option span {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.mode-option small {
+  color: #666;
+  font-size: 12px;
+}
+
+.password-section {
+  margin: 20px 0;
+}
+
+.password-section input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.modal .password-section input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal .modal-buttons .btn-primary,
+.modal .modal-buttons .btn-secondary {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal .mode-options {
+  width: 100%;
+  box-sizing: border-box;
+}

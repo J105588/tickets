@@ -1,0 +1,896 @@
+/* ===============================================================
+   オフライン同期システム v2.0 用CSSスタイル
+   =============================================================== */
+
+/* 同期モーダル */
+#sync-modal-v2 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+#sync-modal-v2 .modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+}
+
+#sync-modal-v2 h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.4em;
+}
+
+#sync-modal-v2 p {
+  margin: 0 0 20px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* スピナー */
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* プログレスバー */
+.sync-progress {
+  margin: 20px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  width: 0%;
+  animation: progress 2s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+/* 同期状況 */
+.sync-status {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #3498db;
+}
+
+.sync-status p {
+  margin: 0;
+  font-size: 0.9em;
+  color: #555;
+}
+
+#sync-status-text {
+  font-weight: bold;
+  color: #3498db;
+}
+
+/* 成功通知 */
+.success-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 5px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10001;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* オフライン処理通知 */
+.offline-processing-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  border-radius: 5px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10001;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.success-notification .notification-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.success-notification .notification-icon {
+  font-size: 1.2em;
+  color: #28a745;
+}
+
+.success-notification .notification-message {
+  flex: 1;
+  font-size: 0.9em;
+}
+
+.success-notification .notification-close {
+  background: none;
+  border: none;
+  color: #155724;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.success-notification .notification-close:hover {
+  background-color: rgba(21, 87, 36, 0.1);
+}
+
+/* 同期失敗通知 */
+.sync-failure-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  z-index: 10002;
+  max-width: 420px;
+  width: auto;
+  text-align: left;
+  animation: slideInRight 0.25s ease-out;
+}
+
+.sync-failure-notification h4 {
+  margin: 0 0 15px 0;
+  color: #721c24;
+  font-size: 1.3em;
+}
+
+.sync-failure-notification p {
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.sync-failure-notification button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 0 0 8px;
+  font-size: 0.85em;
+  transition: background-color 0.2s;
+}
+
+.sync-failure-notification button:hover {
+  background: #c82333;
+}
+
+.sync-failure-notification button:first-of-type {
+  background: #007bff;
+}
+
+.sync-failure-notification button:first-of-type:hover {
+  background: #0056b3;
+}
+
+/* キューステータスモーダル */
+#queue-status-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10010;
+  opacity: 0;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#queue-status-modal .modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: translateY(20px);
+  animation: slideUp 0.4s ease-out 0.1s forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+#queue-status-modal h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.queue-status {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #007bff;
+}
+
+.queue-status p {
+  margin: 8px 0;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.queue-status strong {
+  color: #333;
+}
+
+.queue-items {
+  margin-bottom: 25px;
+}
+
+.queue-items h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.2em;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.queue-item {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateX(-20px);
+  animation: slideInLeft 0.3s ease-out forwards;
+}
+
+.queue-item:nth-child(1) { animation-delay: 0.1s; }
+.queue-item:nth-child(2) { animation-delay: 0.2s; }
+.queue-item:nth-child(3) { animation-delay: 0.3s; }
+.queue-item:nth-child(4) { animation-delay: 0.4s; }
+.queue-item:nth-child(5) { animation-delay: 0.5s; }
+.queue-item:nth-child(n+6) { animation-delay: 0.6s; }
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 閉じるアニメーション */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0) translateY(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutBottomLeft {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8) translate(20px, 20px);
+  }
+}
+
+/* 閉じるアニメーション用クラス */
+.fade-out {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-in forwards;
+}
+
+.slide-out-right {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+.scale-out {
+  animation: scaleOut 0.3s ease-in forwards;
+}
+
+.slide-out-bottom-left {
+  animation: slideOutBottomLeft 0.3s ease-in forwards;
+}
+
+.queue-item strong {
+  color: #007bff;
+  font-size: 1em;
+}
+
+.modal-buttons {
+  text-align: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-buttons button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.2s;
+  min-width: 120px;
+}
+
+.modal-buttons button:hover {
+  background: #0056b3;
+}
+
+.modal-buttons button:last-child {
+  background: #6c757d;
+}
+
+.modal-buttons button:last-child:hover {
+  background: #545b62;
+}
+
+/* オフライン状態インジケーター */
+.offline-indicator {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: #dc3545;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: bold;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.offline-indicator.online {
+  background: #28a745;
+  animation: none;
+}
+
+.offline-indicator.offline-with-cache {
+  background: #ffc107;
+  color: #000;
+  animation: pulse 2s infinite;
+}
+
+/* 同期進行状況バー */
+.sync-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #f0f0f0;
+  z-index: 10004;
+}
+
+.sync-progress-bar .progress {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  #sync-modal-v2 .modal-content,
+  #queue-status-modal .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .modal-buttons button {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .success-notification {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .sync-failure-notification {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  /* オフライン同期カードモーダルのレスポンシブ対応 */
+  .offline-sync-card-modal {
+    left: 10px;
+    right: 10px;
+    min-width: auto;
+    max-width: none;
+    width: auto;
+  }
+}
+
+/* オフライン同期カードモーダル（吹き出しスタイル） */
+.offline-sync-card-modal {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  min-width: 280px;
+  max-width: 320px;
+  transform: scale(0) translateY(20px);
+  transform-origin: bottom left;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0;
+  z-index: 10008;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.offline-sync-card-modal.show {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* 吹き出しの矢印 - 削除済み */
+
+.offline-sync-card-modal h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offline-sync-card-modal h4::before {
+  content: '⚙';
+  font-size: 14px;
+}
+
+/* ステータス表示のSVGマスク */
+.sync-status-pill::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E") center/contain;
+}
+
+.sync-status-pill.online::before {
+  color: #28a745;
+}
+
+.sync-status-pill.offline::before {
+  color: #dc3545;
+}
+
+.sync-status-pill.syncing::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") center/contain;
+  color: #ffc107;
+  animation: spin 1s linear infinite;
+}
+
+.sync-status-pill.unknown::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'/%3E%3C/svg%3E") center/contain;
+  color: #6c757d;
+}
+
+.sync-queue-pill::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/%3E%3C/svg%3E") center/contain;
+  color: #6c757d;
+}
+
+.offline-sync-card-btn::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z'/%3E%3C/svg%3E") center/contain;
+}
+
+.offline-sync-card-btn.detail-btn::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z'/%3E%3C/svg%3E") center/contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z'/%3E%3C/svg%3E") center/contain;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.offline-sync-card-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offline-sync-card-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 100%;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.offline-sync-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.offline-sync-card-btn:active {
+  transform: translateY(0);
+}
+
+.offline-sync-card-btn:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.offline-sync-card-status {
+  font-size: 12px;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 12px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #28a745;
+}
+
+.offline-sync-card-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 10006;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.offline-sync-card-overlay.show {
+  display: block;
+  opacity: 1;
+}
+
+/* グローバル設定ボタン */
+.global-settings-button {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 10006;
+  width: 44px;
+  height: 44px;
+  background: rgba(128, 128, 128, 0.8);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .3s ease, background .3s ease, opacity .2s ease;
+}
+
+.global-settings-button:hover {
+  transform: scale(1.04) rotate(90deg);
+  background: rgba(64, 64, 64, 0.9);
+}
+
+.global-settings-button:active {
+  transform: scale(1) rotate(0deg);
+  background: rgba(64, 64, 64, 0.9);
+}
+
+/* オフライン同期コントロール */
+.offline-sync-controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offline-sync-controls-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sync-status-pill {
+  background: #6c757d;
+  color: #fff;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sync-status-pill.online {
+  background: #28a745;
+}
+
+.sync-status-pill.offline {
+  background: #dc3545;
+}
+
+.sync-status-pill.syncing {
+  background: #ffc107;
+}
+
+.sync-status-pill.unknown {
+  background: #6c757d;
+}
+
+.sync-queue-pill {
+  background: #6c757d;
+  color: #fff;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.offline-sync-card-btn.detail-btn {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.offline-sync-controls-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  #sync-modal-v2 .modal-content,
+  #queue-status-modal .modal-content {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  #sync-modal-v2 h3,
+  #queue-status-modal h3,
+  #queue-status-modal h4 {
+    color: #e2e8f0;
+  }
+  
+  #sync-modal-v2 p,
+  #queue-status-modal p {
+    color: #a0aec0;
+  }
+  
+  .queue-status {
+    background: #4a5568;
+    border-left-color: #3182ce;
+  }
+  
+  .queue-status p {
+    color: #cbd5e0;
+  }
+  
+  .queue-status strong {
+    color: #e2e8f0;
+  }
+  
+  .queue-item {
+    background: #4a5568;
+    border-color: #718096;
+    color: #e2e8f0;
+  }
+  
+  .queue-item strong {
+    color: #63b3ed;
+  }
+  
+  .sync-status {
+    background-color: #4a5568;
+    border-left-color: #3182ce;
+  }
+  
+  .sync-status p {
+    color: #cbd5e0;
+  }
+  
+  #sync-status-text {
+    color: #63b3ed;
+  }
+  
+  .global-settings-button {
+    background: rgba(128, 128, 128, 0.7);
+  }
+  
+  .global-settings-button:hover {
+    background: rgba(64, 64, 64, 0.9);
+  }
+  
+  .offline-sync-card-modal {
+    background: #2d3748;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .offline-sync-card-modal h4 {
+    color: #e2e8f0;
+  }
+  
+  .offline-sync-card-status {
+    background: #4a5568;
+    border-left-color: #28a745;
+    color: #cbd5e0;
+  }
+}

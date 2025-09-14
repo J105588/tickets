@@ -1,0 +1,83 @@
+{
+  "name": "座席管理システム",
+  "short_name": "座席管理",
+  "description": "文化祭やイベント向けの座席予約・チェックイン・当日券発行システム",
+  "version": "1.0.3",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007bff",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "lang": "ja",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "座席選択",
+      "short_name": "座席",
+      "description": "座席の選択と予約を行います",
+      "url": "./seats.html",
+      "icons": [
+        {
+          "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "時間帯選択",
+      "short_name": "時間帯",
+      "description": "公演の時間帯を選択します",
+      "url": "./timeslot.html",
+      "icons": [
+        {
+          "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "当日券発行",
+      "short_name": "当日券",
+      "description": "当日券の発行を行います",
+      "url": "./walkin.html",
+      "icons": [
+        {
+          "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
+}
