@@ -2,7 +2,7 @@
 // 複数のAPI URL（使用数上限回避のため分散）
 const GAS_API_URLS = [
   //jxjin2010@gmail.com
-  "https://script.google.com/macros/s/AKfycbzEKu8evZEihhPQaDTbVUKr2ffR0aDYHcIa5kIOg6fvl_f4YOJEspmV41He3aKi4Ru9/exec",
+  "https://script.google.com/macros/s/AKfycbycVGcgwycHcMfZUqIA58dVPXN2ge_usIkA0BNmX_7I8bl8wGCtg9eAm-MIrsNXXQ5y/exec",
   //jxjin.ig.school@gmail.com
   "https://script.google.com/macros/s/AKfycbwi4yz1lcJwj_IAe6Qu1mf7Swro7ZgEOipeZ7Fdf0U9UIWfAEw136wq_jrev-3o4pFK/exec"
 ];
