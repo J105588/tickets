@@ -732,15 +732,15 @@ graph TD
 graph TD
   subgraph UI
     A[サイドバーのモード変更] --> B[パスワード入力]
-    X[URL直アクセス (mode,password)] --> C
+    X[URL直アクセス: ?mode=...&password=...] --> C
   end
-  B --> C[GAS verifyModePassword - mode+password]
+  B --> C[GAS: verifyModePassword(mode, password)]
   C --> D{認証成功?}
   D -->|はい| E[localStorage.currentMode を更新]
   E --> F{mode == superadmin?}
   F -->|はい| G[localStorage.superadminToken を生成/維持]
-  F -->|いいえ| H[トークンは変更なし]
-  G --> I[URLの機密を除去 - history.replaceState]
+  F -->|いいえ| H[トークンは変更しない]
+  G --> I[URLから機密情報を除去（history.replaceState）]
   H --> I
   I --> J[ページリロード]
   D -->|いいえ| K[エラー表示/監査ログ]
