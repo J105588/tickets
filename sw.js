@@ -1,5 +1,5 @@
-// sw.js - 静的資産キャッシュとオフライン表示の強化版
-const CACHE_NAME = 'tickets-optimized-v3';
+// sw.js - 静的資産キャッシュとオフライン表示の強化版（PWA更新通知対応）
+const CACHE_NAME = 'tickets-optimized-v4';
 const CRITICAL_ASSETS = [
 	'./',
 	'./index.html',
@@ -78,6 +78,22 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SKIP_WAITING') {
 		self.skipWaiting();
+	}
+});
+
+// 新しいService Workerが利用可能になった時の処理
+self.addEventListener('message', (event) => {
+	if (event.data && event.data.type === 'CHECK_UPDATE') {
+		// クライアントに更新通知を送信
+		self.clients.matchAll().then(clients => {
+			clients.forEach(client => {
+				client.postMessage({ 
+					type: 'UPDATE_AVAILABLE',
+					version: CACHE_NAME,
+					timestamp: Date.now()
+				});
+			});
+		});
 	}
 });
 

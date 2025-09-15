@@ -26,6 +26,7 @@ class OptimizedLoader {
     this.dependencies.set('ui-optimizer', []);
     this.dependencies.set('performance-monitor', []);
     this.dependencies.set('pwa-install', []);
+    this.dependencies.set('pwa-update', []);
     this.dependencies.set('audit-logger', ['optimized-api']);
   }
 
@@ -43,7 +44,7 @@ class OptimizedLoader {
     await Promise.all(secondaryModules.map(module => this.loadModule(module)));
     
     // その他のモジュールを並列読み込み
-    const otherModules = ['system-lock', 'sidebar', 'offline-sync-v2', 'pwa-install'];
+    const otherModules = ['system-lock', 'sidebar', 'offline-sync-v2', 'pwa-install', 'pwa-update'];
     await Promise.all(otherModules.map(module => this.loadModule(module)));
     
     this.performanceMetrics.totalLoadTime = performance.now() - this.performanceMetrics.loadStart;
@@ -94,7 +95,8 @@ class OptimizedLoader {
       'ui-optimizer': () => import('./ui-optimizer.js'),
       'performance-monitor': () => import('./performance-monitor.js'),
       'audit-logger': () => import('./audit-logger.js'),
-      'pwa-install': () => this._loadPWAInstall()
+      'pwa-install': () => this._loadPWAInstall(),
+      'pwa-update': () => import('./pwa-update.js')
     };
 
     const loader = moduleMap[moduleName];
