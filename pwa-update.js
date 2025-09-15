@@ -4,6 +4,7 @@ class PWAUpdateManager {
         this.registration = null;
         this.updateAvailable = false;
         this.updateNotification = null;
+        this.loadingModal = null;
         this.init();
     }
 
@@ -84,7 +85,9 @@ class PWAUpdateManager {
         notification.className = 'pwa-update-notification';
         notification.innerHTML = `
             <div class="pwa-update-content">
-                <div class="pwa-update-icon">🔄</div>
+                <div class="pwa-update-icon">
+                    <div class="pwa-update-spinner"></div>
+                </div>
                 <div class="pwa-update-text">
                     <div class="pwa-update-title">システム更新が利用可能です</div>
                     <div class="pwa-update-description">最新の機能と改善を利用するために更新してください</div>
@@ -163,9 +166,19 @@ class PWAUpdateManager {
             }
 
             .pwa-update-icon {
-                font-size: 24px;
                 margin-bottom: 12px;
-                animation: spin 2s linear infinite;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .pwa-update-spinner {
+                width: 24px;
+                height: 24px;
+                border: 3px solid rgba(255, 255, 255, 0.3);
+                border-top: 3px solid white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
             }
 
             @keyframes spin {
@@ -248,6 +261,66 @@ class PWAUpdateManager {
                 color: white;
             }
 
+            .pwa-update-error-icon {
+                width: 24px;
+                height: 24px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: bold;
+                color: white;
+            }
+
+            .pwa-update-loading-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 20000;
+                backdrop-filter: blur(5px);
+            }
+
+            .pwa-update-loading-content {
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                max-width: 300px;
+                width: 90%;
+            }
+
+            .pwa-update-loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            }
+
+            .pwa-update-loading-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+            }
+
+            .pwa-update-loading-description {
+                font-size: 14px;
+                color: #666;
+                line-height: 1.4;
+            }
+
             @media (max-width: 480px) {
                 .pwa-update-notification {
                     top: 10px;
@@ -267,12 +340,8 @@ class PWAUpdateManager {
         }
 
         try {
-            // 更新ボタンを無効化
-            const updateBtn = document.querySelector('.pwa-update-btn-primary');
-            if (updateBtn) {
-                updateBtn.disabled = true;
-                updateBtn.textContent = '更新中...';
-            }
+            // 更新中のロードモーダルを表示
+            this.showUpdateLoadingModal();
 
             // Service Workerに更新を指示
             if (this.registration && this.registration.waiting) {
@@ -294,10 +363,11 @@ class PWAUpdateManager {
             // 少し待ってからリロード
             setTimeout(() => {
                 window.location.reload();
-            }, 1000);
+            }, 2000);
 
         } catch (error) {
             console.error('Failed to apply update:', error);
+            this.hideUpdateLoadingModal();
             this.showUpdateError();
         }
     }
@@ -331,7 +401,9 @@ class PWAUpdateManager {
         if (notification) {
             const content = notification.querySelector('.pwa-update-content');
             content.innerHTML = `
-                <div class="pwa-update-icon">⚠️</div>
+                <div class="pwa-update-icon">
+                    <div class="pwa-update-error-icon">!</div>
+                </div>
                 <div class="pwa-update-text">
                     <div class="pwa-update-title">更新に失敗しました</div>
                     <div class="pwa-update-description">ページを手動でリロードしてください</div>
@@ -348,9 +420,33 @@ class PWAUpdateManager {
         }
     }
 
-    handleReload() {
-        // Service Workerからのリロード指示
-        window.location.reload();
+    showUpdateLoadingModal() {
+        // 既存の通知を非表示
+        if (this.updateNotification) {
+            this.updateNotification.style.display = 'none';
+        }
+
+        // ロードモーダルを作成
+        const loadingModal = document.createElement('div');
+        loadingModal.id = 'pwa-update-loading-modal';
+        loadingModal.className = 'pwa-update-loading-modal';
+        loadingModal.innerHTML = `
+            <div class="pwa-update-loading-content">
+                <div class="pwa-update-loading-spinner"></div>
+                <div class="pwa-update-loading-title">システムを更新中...</div>
+                <div class="pwa-update-loading-description">最新の機能を読み込んでいます<br>しばらくお待ちください</div>
+            </div>
+        `;
+
+        document.body.appendChild(loadingModal);
+        this.loadingModal = loadingModal;
+    }
+
+    hideUpdateLoadingModal() {
+        if (this.loadingModal && this.loadingModal.parentNode) {
+            this.loadingModal.parentNode.removeChild(this.loadingModal);
+            this.loadingModal = null;
+        }
     }
 
     // 手動で更新チェック
