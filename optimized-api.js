@@ -1,5 +1,6 @@
 // optimized-api.js - 最適化されたAPIクラス
 import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager } from './config.js';
+import audit from './audit-logger.js';
 import apiCache from './api-cache.js';
 
 class OptimizedGasAPI {
@@ -33,6 +34,7 @@ class OptimizedGasAPI {
         const callbackName = 'jsonpCallback_' + functionName + '_' + Date.now();
         const encodedParams = encodeURIComponent(JSON.stringify(params));
         const encodedFuncName = encodeURIComponent(functionName);
+        const uaParam = (() => { try { return encodeURIComponent(navigator.userAgent || ''); } catch (_) { return ''; } })();
         
         window[callbackName] = (data) => {
           debugLog(`Optimized API Response: ${functionName}`, data);
@@ -44,6 +46,7 @@ class OptimizedGasAPI {
             }
             
             if (data && typeof data === 'object') {
+              try { audit.wrapApiCall(functionName, params, data); } catch (_) {}
               resolve(data);
             } else {
               console.warn(`Invalid API response for ${functionName}:`, data);
@@ -65,7 +68,7 @@ class OptimizedGasAPI {
           currentUrlIndex = 0;
         }
         
-        let fullUrl = `${currentUrl}?callback=${callbackName}&${formData}&${cacheBuster}`;
+        let fullUrl = `${currentUrl}?callback=${callbackName}&${formData}&userAgent=${uaParam}&${cacheBuster}`;
 
         const script = document.createElement('script');
         script.src = fullUrl;
@@ -101,7 +104,7 @@ class OptimizedGasAPI {
                 nextUrlIndex = Math.floor(Math.random() * urls.length);
               } while (nextUrlIndex === currentUrlIndexInArray && urls.length > 1);
               
-              const nextUrl = `${urls[nextUrlIndex]}?callback=${callbackName}&${formData}&${cacheBuster}`;
+              const nextUrl = `${urls[nextUrlIndex]}?callback=${callbackName}&${formData}&userAgent=${uaParam}&${cacheBuster}`;
               console.warn('Failing over to different GAS url:', nextUrl);
               script.src = nextUrl;
               return;

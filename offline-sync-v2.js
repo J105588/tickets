@@ -980,14 +980,20 @@ class OfflineOperationManager {
       clearInterval(this.backgroundSyncInterval);
     }
     
+    let lastCacheRefreshAt = 0;
     this.backgroundSyncInterval = setInterval(() => {
+      try { if (document && document.visibilityState === 'hidden') { return; } } catch (_) {}
       if (this.isOnline && !this.syncInProgress) {
         const hasQueue = this.readOperationQueue().length > 0;
         if (hasQueue) {
           this.performSync();
         } else {
-          // キューが無くても座席キャッシュを最新化
-          this.refreshCache();
+          // キャッシュ更新は最短60秒間隔に制限
+          const now = Date.now();
+          if (now - lastCacheRefreshAt >= 60000) {
+            lastCacheRefreshAt = now;
+            this.refreshCache();
+          }
         }
       }
     }, OFFLINE_CONFIG.BACKGROUND_SYNC_INTERVAL);

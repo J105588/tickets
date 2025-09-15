@@ -84,7 +84,7 @@ class UIOptimizer {
     // クリックイベントのバブリング最適化
     document.addEventListener('click', (event) => {
       this.handleOptimizedClick(event);
-    }, { passive: true });
+    }, { passive: false });
   }
 
   handleOptimizedClick(event) {

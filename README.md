@@ -474,6 +474,49 @@ GasAPI.getAllUrls()           // 利用可能なURL一覧を取得
 
 ---
 
+## 📊 ログシステム（サーバーログ vs クライアント監査）
+
+### 用途の違い
+- **OPERATION_LOGS（サーバーログ）**
+  - GAS 側のAPI実行を記録（関数名・結果・例外）。サーバー挙動の監査・障害解析用。
+- **CLIENT_AUDIT（クライアント監査）**
+  - フロントから送られる操作監査。必ず「いつ・どの端末（UserAgent）・何を・変更前・変更後」を残す。
+  - 予約/チェックイン/当日券発行などはサーバー内でbefore/afterを確定させて追記。
+
+### 監査ログの保存先（スプレッドシート）
+- スクリプトプロパティに設定（GAS側）
+  - `LOG_SPREADSHEET_ID`: ログ保存用スプレッドシートID（必須）
+  - `CLIENT_AUDIT_SHEET_NAME`: 監査シート名（省略時 `CLIENT_AUDIT`）
+- `CLIENT_AUDIT` シートの列（自動作成）
+  1. Timestamp
+  2. EventType（例: api/ui/nav/error）
+  3. Action（例: reserveSeats/checkInSeat/assignWalkInSeat/mode_change など）
+  4. Metadata（JSON: before/after/対象座席/パラメータ など）
+  5. SessionId
+  6. UserId
+  7. UserAgent
+  8. IPAddress
+
+### クライアント送信仕様
+- まず `POST`（doPost）で送信し、失敗時は JSONP（doGet）に自動フォールバック。
+- バッチは小さく分割して送信（URL長エラー回避）。
+- API 呼び出し結果は自動で `type: 'api'` として記録。
+- UI イベント（クリック/変更/モード変更/疎通テスト）は `type: 'ui'` で記録。
+
+### ログ表示（logs.html）
+- データソース: `getClientAuditLogs`, `getClientAuditStatistics`
+- アクセス制御:
+  - サイドバーから遷移時に `?auth=<token>` を付与（最高管理者専用）
+  - `logs.html` 起動時に `auth === localStorage.superadminToken` を検証し、不一致なら赤字で「権限がありません」を表示
+
+### セットアップ手順（監査ログ）
+1) GAS エディタ > プロジェクトのプロパティ > スクリプトのプロパティ に以下を追加
+   - `LOG_SPREADSHEET_ID` = 監査ログ用スプレッドシートのID
+   - 任意 `CLIENT_AUDIT_SHEET_NAME` = `CLIENT_AUDIT`
+2) Webアプリとしてデプロイ → デプロイURLを `config.js` の `GAS_API_URLS` に設定
+3) フロントを再読み込みして、座席操作やモード変更を実行
+4) スプレッドシートの `CLIENT_AUDIT` シートに行が追記されていることを確認
+
 ## 🔧 設定とカスタマイズ
 
 ### 基本設定

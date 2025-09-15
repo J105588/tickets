@@ -49,8 +49,13 @@ class SystemLock {
         }
       };
 
+      let _lockCheckInFlight = false;
       const tick = async () => {
         try {
+          // バックグラウンドタブではスキップ
+          try { if (document && document.visibilityState === 'hidden') { return; } } catch (_) {}
+          if (_lockCheckInFlight) { return; }
+          _lockCheckInFlight = true;
           // オフライン時は通信を行わない
           try { if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) { return; } } catch (_) {}
           const status = await GasAPI.getSystemLock();
@@ -73,6 +78,7 @@ class SystemLock {
             console.warn('System lock check failed, maintaining lock state for safety');
           });
         } finally {
+          _lockCheckInFlight = false;
           // 初回チェック完了を通知
           resolveReadyOnce();
         }

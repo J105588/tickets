@@ -1,5 +1,6 @@
 // api.js
 import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager } from './config.js';
+import audit from './audit-logger.js';
 
 class GasAPI {
   static _callApi(functionName, params = []) {
@@ -34,6 +35,7 @@ class GasAPI {
         const callbackName = 'jsonpCallback_' + functionName + '_' + Date.now();
         const encodedParams = encodeURIComponent(JSON.stringify(params));
         const encodedFuncName = encodeURIComponent(functionName);
+        const uaParam = (() => { try { return encodeURIComponent(navigator.userAgent || ''); } catch (_) { return ''; } })();
         
         window[callbackName] = (data) => {
           debugLog(`API Response (JSONP): ${functionName}`, data);
@@ -44,8 +46,7 @@ class GasAPI {
               script.parentNode.removeChild(script); // スクリプトタグを削除
             }
             
-            // レスポンスデータの詳細をログに出力
-            console.log(`API Response for ${functionName}:`, data);
+            try { audit.wrapApiCall(functionName, params, data); } catch (_) {}
             
             // success: falseの場合も正常なレスポンスとして扱う
             if (data && typeof data === 'object') {
@@ -73,7 +74,7 @@ class GasAPI {
           currentUrlIndex = 0; // フォールバック
         }
         
-        let fullUrl = `${currentUrl}?callback=${callbackName}&${formData}&${cacheBuster}`;
+        let fullUrl = `${currentUrl}?callback=${callbackName}&${formData}&userAgent=${uaParam}&${cacheBuster}`;
 
         const script = document.createElement('script');
         script.src = fullUrl;
@@ -116,7 +117,7 @@ class GasAPI {
                 nextUrlIndex = Math.floor(Math.random() * urls.length);
               } while (nextUrlIndex === currentUrlIndexInArray && urls.length > 1);
               
-              const nextUrl = `${urls[nextUrlIndex]}?callback=${callbackName}&${formData}&${cacheBuster}`;
+              const nextUrl = `${urls[nextUrlIndex]}?callback=${callbackName}&${formData}&userAgent=${uaParam}&${cacheBuster}`;
               console.warn('Failing over to different GAS url:', nextUrl);
               script.src = nextUrl;
               return; // タイムアウトは継続
@@ -215,7 +216,7 @@ class GasAPI {
       };
 
       const currentUrl = apiUrlManager.getCurrentUrl();
-      let url = `${currentUrl}?callback=${callbackName}&func=reportError&params=${encodeURIComponent(JSON.stringify([errorMessage]))}`;
+      let url = `${currentUrl}?callback=${callbackName}&func=reportError&params=${encodeURIComponent(JSON.stringify([errorMessage]))}&userAgent=${encodeURIComponent(navigator.userAgent || '')}`;
       script.src = url;
       document.head.appendChild(script);
     } catch (e) {

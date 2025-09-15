@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>座席管理システム - 操作ログ</title>
+  <meta name="description" content="GASを経由した全操作ログの詳細表示">
+  <meta name="theme-color" content="#007bff">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="座席管理システム">
+  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="152x152" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="144x144" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="120x120" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="114x114" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="76x76" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="72x72" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="60x60" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <link rel="apple-touch-icon" sizes="57x57" href="https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no">
+  <meta name="msapplication-TileColor" content="#007bff">
+  <meta name="msapplication-config" content="browserconfig.xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="logs.css">
+</head>
+<body>
+
+  <div id="sidebar-container"></div>
+
+  <!-- オフライン状態インジケーター -->
+  <div id="offline-indicator" class="offline-indicator" style="display: none;">オフライン</div>
+
+  <!-- 同期進行状況バー -->
+  <div id="sync-progress-bar" class="sync-progress-bar" style="display: none;">
+    <div class="progress"></div>
+  </div>
+
+  <div id="main-content">
+    <header class="page-header">
+      <button class="menu-btn" onclick="toggleSidebar()">&#9776;</button>
+      <h1>操作ログ</h1>
+      <div class="header-actions" style="margin-left:auto; display:flex; gap:8px;">
+        <button id="refresh-btn" class="btn-primary" onclick="refreshLogs()">更新</button>
+        <button id="auto-refresh-btn" class="btn-secondary" onclick="toggleAutoRefresh()">自動更新: OFF</button>
+      </div>
+    </header>
+
+    <main class="container" id="logs-root" style="display:none;">
+      <!-- 統計情報 -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-number" id="total-operations">-</div>
+          <div class="stat-label">総操作数</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-number" id="success-count">-</div>
+          <div class="stat-label">成功</div>
+        </div>
+        <div class="stat-card error">
+          <div class="stat-number" id="error-count">-</div>
+          <div class="stat-label">エラー</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="last-update">-</div>
+          <div class="stat-label">最終更新</div>
+        </div>
+      </div>
+
+      <!-- フィルター -->
+      <div class="filter-container">
+        <div class="filter-group">
+          <label for="operation-filter">操作:</label>
+          <select id="operation-filter">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="status-filter">ステータス:</label>
+          <select id="status-filter">
+            <option value="">すべて</option>
+            <option value="SUCCESS">成功</option>
+            <option value="ERROR">エラー</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="limit-filter">表示件数:</label>
+          <select id="limit-filter">
+            <option value="50">50件</option>
+            <option value="100" selected>100件</option>
+            <option value="200">200件</option>
+            <option value="500">500件</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="applyFilters()">フィルター適用</button>
+      </div>
+
+      <!-- ログテーブル -->
+      <div class="logs-container">
+        <div class="logs-header">
+          <h3>操作ログ一覧</h3>
+          <div class="logs-info">
+            <span id="logs-count">0件</span>
+            <span id="logs-loading" style="display: none;">読み込み中...</span>
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>タイムスタンプ</th>
+                <th>種別</th>
+                <th>アクション</th>
+                <th>メタデータ</th>
+                <th>セッション</th>
+                <th>IPアドレス</th>
+                <th>詳細</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body">
+              <tr>
+                <td colspan="7" class="no-data">データを読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ログ詳細モーダル -->
+  <div id="log-detail-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>ログ詳細</h3>
+        <button class="close-btn" onclick="closeLogDetail()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>基本情報</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>タイムスタンプ:</label>
+              <span id="detail-timestamp">-</span>
+            </div>
+            <div class="detail-item">
+              <label>操作:</label>
+              <span id="detail-operation">-</span>
+            </div>
+            <div class="detail-item">
+              <label>ステータス:</label>
+              <span id="detail-status">-</span>
+            </div>
+            <div class="detail-item">
+              <label>IPアドレス:</label>
+              <span id="detail-ip">-</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h4>パラメータ</h4>
+          <pre id="detail-parameters" class="json-display">-</pre>
+        </div>
+        
+        <div class="detail-section">
+          <h4>結果</h4>
+          <pre id="detail-result" class="json-display">-</pre>
+        </div>
+        
+        <div class="detail-section">
+          <h4>ユーザーエージェント</h4>
+          <div id="detail-useragent" class="user-agent">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- エラー表示 -->
+  <div id="error-container" class="error-container" style="display: none;">
+    <div class="error-content">
+      <p id="error-message">エラーが発生しました</p>
+      <div class="error-buttons">
+        <button onclick="location.reload()">再読み込み</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ローディングモーダル -->
+  <div id="loading-modal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <div class="spinner"></div>
+      <p>処理中です...</p>
+    </div>
+  </div>
+
+  <!-- スクリプト -->
+  <script>
+    (function gateLogs() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const auth = params.get('auth');
+        const token = localStorage.getItem('superadminToken') || '1';
+        const ok = auth && token && auth === token;
+        if (!ok) {
+          document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#b00020;font-weight:bold;">権限がありません</div>';
+          return;
+        }
+        document.getElementById('logs-root').style.display = '';
+      } catch (e) {
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#b00020;font-weight:bold;">権限がありません</div>';
+      }
+    })();
+  </script>
+  <script type="module" src="logs-main.js"></script>
+  
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // Service Workerからのリロードメッセージを処理
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'RELOAD') {
+          window.location.reload();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

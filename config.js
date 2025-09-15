@@ -2,10 +2,16 @@
 // 複数のAPI URL（使用数上限回避のため分散）
 const GAS_API_URLS = [
   //jxjin2010@gmail.com
-  "https://script.google.com/macros/s/AKfycbycVGcgwycHcMfZUqIA58dVPXN2ge_usIkA0BNmX_7I8bl8wGCtg9eAm-MIrsNXXQ5y/exec",
+  "https://script.google.com/macros/s/AKfycbxkuunkIbzqnSjIsV0MkW4lLsS8LgG_Dnu_sl-EolMt7A1YsT3x3gl-sKsDRujT8aHQ/exec"
   //jxjin.ig.school@gmail.com
-  "https://script.google.com/macros/s/AKfycbwi4yz1lcJwj_IAe6Qu1mf7Swro7ZgEOipeZ7Fdf0U9UIWfAEw136wq_jrev-3o4pFK/exec"
+  //"https://script.google.com/macros/s/AKfycbzNCNFL54482qdTTwT4i9X_dnVCIKirZ3zpsuuS2UwwxcGA8wkcjDuhJP5Q_q4Hbvsu/exec"
 ];
+
+// ログ記録用スプレッドシートID
+const LOG_SPREADSHEET_ID = '1ZGQ5BTNW_pTDuMvbZgla2B_soisdvtCM2UrnVi_L-5c'; // 実際のスプレッドシートIDに置き換えてください
+
+// ログ記録用シート名
+const LOG_SHEET_NAME = 'OPERATION_LOGS'; // ログを記録するシート名
 
 // URL選択とローテーション管理
 class APIUrlManager {

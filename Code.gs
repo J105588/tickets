@@ -53,11 +53,27 @@ function doPost(e) {
       'reportError': reportError,
       'getSystemLock': getSystemLock,
       'setSystemLock': setSystemLock,
-      'execDangerCommand': execDangerCommand
+      'execDangerCommand': execDangerCommand,
+      // ログシステム用の新しいAPI
+      'getOperationLogs': getOperationLogs,
+      'getLogStatistics': getLogStatistics,
+      'recordClientAudit': recordClientAudit
+      , 'getClientAuditLogs': getClientAuditLogs
+      , 'getClientAuditStatistics': getClientAuditStatistics
     };
 
     if (functionMap[funcName]) {
       response = functionMap[funcName].apply(null, funcParams);
+      
+      // ログ記録（既存システムに影響を与えないよう安全に実装）
+      try {
+        const userAgent = e.parameter.userAgent || 'Unknown';
+        const ipAddress = e.parameter.ipAddress || 'Unknown';
+        logOperation(funcName, funcParams, response, userAgent, ipAddress);
+      } catch (logError) {
+        // ログ記録に失敗しても既存システムに影響を与えない
+        Logger.log('Log recording failed for ' + funcName + ': ' + logError.message);
+      }
     } else {
       throw new Error("無効な関数名です: " + funcName);
     }
@@ -119,11 +135,24 @@ function doGet(e) {
         'reportError': reportError,
         'getSystemLock': getSystemLock,
         'setSystemLock': setSystemLock,
-        'execDangerCommand': execDangerCommand
+        'execDangerCommand': execDangerCommand,
+        'recordClientAudit': recordClientAudit,
+        'getClientAuditLogs': getClientAuditLogs,
+        'getClientAuditStatistics': getClientAuditStatistics
       };
 
       if (functionMap[funcName]) {
         response = functionMap[funcName].apply(null, funcParams);
+        
+        // ログ記録（既存システムに影響を与えないよう安全に実装）
+        try {
+          const userAgent = e.parameter.userAgent || 'Unknown';
+          const ipAddress = e.parameter.ipAddress || 'Unknown';
+          logOperation(funcName, funcParams, response, userAgent, ipAddress);
+        } catch (logError) {
+          // ログ記録に失敗しても既存システムに影響を与えない
+          Logger.log('Log recording failed for ' + funcName + ': ' + logError.message);
+        }
       } else {
         throw new Error("無効な関数名です: " + funcName);
       }
@@ -131,6 +160,15 @@ function doGet(e) {
   } catch (err) {
     console.error('doGet処理エラー:', err);
     response = { success: false, error: err.message };
+    
+    // エラーログ記録
+    try {
+      const userAgent = e.parameter.userAgent || 'Unknown';
+      const ipAddress = e.parameter.ipAddress || 'Unknown';
+      logOperation('doGet_error', { error: err.message }, response, userAgent, ipAddress);
+    } catch (logError) {
+      Logger.log('Error log recording failed: ' + logError.message);
+    }
   }
 
   // JSONP形式でレスポンスを返す
@@ -210,11 +248,21 @@ function getSeatData(group, day, timeslot, isAdmin = false, isSuperAdmin = false
     });
 
     Logger.log(`座席データを正常に取得: [${group}-${day}-${timeslot}], 座席数: ${Object.keys(seatMap).length}`);
-    return { success: true, seatMap: seatMap };
+    const result = { success: true, seatMap: seatMap };
+    
+    // ログ記録
+    safeLogOperation('getSeatData', { group, day, timeslot, isAdmin, isSuperAdmin }, result);
+    
+    return result;
 
   } catch (e) {
     Logger.log(`getSeatData Error for ${group}-${day}-${timeslot}: ${e.message}\n${e.stack}`);
-    return { success: false, error: `座席データの取得に失敗しました: ${e.message}` };
+    const result = { success: false, error: `座席データの取得に失敗しました: ${e.message}` };
+    
+    // エラーログ記録
+    safeLogOperation('getSeatData', { group, day, timeslot, isAdmin, isSuperAdmin }, result);
+    
+    return result;
   }
 }
 
@@ -270,11 +318,21 @@ function getSeatDataMinimal(group, day, timeslot, isAdmin = false) {
       seatMap[seatId] = seat;
     });
 
-    return { success: true, seatMap: seatMap };
+    const result = { success: true, seatMap: seatMap };
+    
+    // ログ記録
+    safeLogOperation('getSeatDataMinimal', { group, day, timeslot, isAdmin }, result);
+    
+    return result;
 
   } catch (e) {
     Logger.log(`getSeatDataMinimal Error for ${group}-${day}-${timeslot}: ${e.message}`);
-    return { success: false, error: e.message };
+    const result = { success: false, error: e.message };
+    
+    // エラーログ記録
+    safeLogOperation('getSeatDataMinimal', { group, day, timeslot, isAdmin }, result);
+    
+    return result;
   }
 }
 
@@ -370,6 +428,15 @@ function reserveSeats(group, day, timeslot, selectedSeats) {
         throw new Error("予約対象の座席が見つかりませんでした。");
       }
 
+      // 監査: 変更前の状態を収集
+      const beforeMap = {};
+      updatedRows.forEach(({ row, seatId }) => {
+        const c = sheet.getRange(row, 3).getValue();
+        const d = sheet.getRange(row, 4).getValue();
+        const e = sheet.getRange(row, 5).getValue();
+        beforeMap[seatId] = { C: c, D: d, E: e };
+      });
+
       // 最適化: バッチ更新で一括処理
       updatedRows.forEach(({ row, seatId }) => {
         // C列（3列目）に「予約済」を設定
@@ -380,16 +447,46 @@ function reserveSeats(group, day, timeslot, selectedSeats) {
       SpreadsheetApp.flush();
       Logger.log(`reserveSeats: 完了 - ${updatedRows.length}件の座席を予約`);
       
-      return { success: true, message: `予約が完了しました。\n座席: ${selectedSeats.join(', ')}` };
+      const result = { success: true, message: `予約が完了しました。\n座席: ${selectedSeats.join(', ')}` };
+      
+      // ログ記録
+      safeLogOperation('reserveSeats', { group, day, timeslot, selectedSeats }, result);
+      try {
+        const afterMap = {};
+        updatedRows.forEach(({ row, seatId }) => {
+          const c = sheet.getRange(row, 3).getValue();
+          const d = sheet.getRange(row, 4).getValue();
+          const e = sheet.getRange(row, 5).getValue();
+          afterMap[seatId] = { C: c, D: d, E: e };
+        });
+        appendClientAuditEntries([{ 
+          ts: new Date(),
+          type: 'api',
+          action: 'reserveSeats',
+          meta: { group, day, timeslot, seats: selectedSeats, before: beforeMap, after: afterMap }
+        }]);
+      } catch (_) {}
+      
+      return result;
 
     } catch (e) {
       Logger.log(`reserveSeats Error for ${group}-${day}-${timeslot}: ${e.message}\n${e.stack}`);
-      return { success: false, message: `予約エラー: ${e.message}` };
+      const result = { success: false, message: `予約エラー: ${e.message}` };
+      
+      // エラーログ記録
+      safeLogOperation('reserveSeats', { group, day, timeslot, selectedSeats }, result);
+      
+      return result;
     } finally {
       lock.releaseLock();
     }
   } else {
-    return { success: false, message: "処理が大変混み合っています。しばらく時間をおいてから再度お試しください。" };
+    const result = { success: false, message: "処理が大変混み合っています。しばらく時間をおいてから再度お試しください。" };
+    
+    // ロック取得失敗のログ記録
+    safeLogOperation('reserveSeats', { group, day, timeslot, selectedSeats }, result);
+    
+    return result;
   }
 }
 
@@ -421,7 +518,12 @@ function checkInSeat(group, day, timeslot, seatId) {
           if (status === "予約済") {
             sheet.getRange(i + 2, 5).setValue("済");
             SpreadsheetApp.flush();
-            return { success: true, message: `${seatId} をチェックインしました。`, checkedInName: name };
+            const result = { success: true, message: `${seatId} をチェックインしました。`, checkedInName: name };
+            
+            // ログ記録
+            safeLogOperation('checkInSeat', { group, day, timeslot, seatId }, result);
+            
+            return result;
           } else {
             throw new Error(`${seatId} はチェックインできない状態です。（現在の状態: ${status}）`);
           }
@@ -433,12 +535,22 @@ function checkInSeat(group, day, timeslot, seatId) {
       }
     } catch (e) {
       Logger.log(`checkInSeat Error for ${group}-${day}-${timeslot}: ${e.message}\n${e.stack}`);
-      return { success: false, message: e.message };
+      const result = { success: false, message: e.message };
+      
+      // エラーログ記録
+      safeLogOperation('checkInSeat', { group, day, timeslot, seatId }, result);
+      
+      return result;
     } finally {
       lock.releaseLock();
     }
   } else {
-    return { success: false, message: "処理が混み合っています。再度お試しください。" };
+    const result = { success: false, message: "処理が混み合っています。再度お試しください。" };
+    
+    // ロック取得失敗のログ記録
+    safeLogOperation('checkInSeat', { group, day, timeslot, seatId }, result);
+    
+    return result;
   }
 }
 
@@ -548,18 +660,49 @@ function assignWalkInSeat(group, day, timeslot) {
 
       if (assignedSeat) {
         SpreadsheetApp.flush();
-        return { success: true, message: `当日券を発行しました！\n\nあなたの座席は 【${assignedSeat}】 です。`, seatId: assignedSeat };
+        const result = { success: true, message: `当日券を発行しました！\n\nあなたの座席は 【${assignedSeat}】 です。`, seatId: assignedSeat };
+        
+        // ログ記録
+        safeLogOperation('assignWalkInSeat', { group, day, timeslot }, result);
+        try {
+          // 監査: after は直後の値、before は更新前の値を取得できないため空席時の推定
+          const rowIndex = data.findIndex(r => String(r[0]) + String(r[1]) === assignedSeat);
+          if (rowIndex >= 0) {
+            const r = rowIndex + 2;
+            const before = { C: '空', D: '', E: '' };
+            const after = { C: sheet.getRange(r, 3).getValue(), D: sheet.getRange(r, 4).getValue(), E: sheet.getRange(r, 5).getValue() };
+            appendClientAuditEntries([{ ts: new Date(), type: 'api', action: 'assignWalkInSeat', meta: { group, day, timeslot, seatId: assignedSeat, before, after } }]);
+          }
+        } catch (_) {}
+        
+        return result;
       } else {
-        return { success: false, message: '申し訳ありません、この回の座席は現在満席です。' };
+        const result = { success: false, message: '申し訳ありません、この回の座席は現在満席です。' };
+        
+        // ログ記録
+        safeLogOperation('assignWalkInSeat', { group, day, timeslot }, result);
+        try { appendClientAuditEntries([{ ts: new Date(), type: 'api', action: 'assignWalkInSeat', meta: { group, day, timeslot, error: 'no_empty_seat' } }]); } catch (_) {}
+        
+        return result;
       }
     } catch (e) {
       Logger.log(`assignWalkInSeat Error: ${e.message}\n${e.stack}`);
-      return { success: false, message: `エラーが発生しました: ${e.message}` };
+      const result = { success: false, message: `エラーが発生しました: ${e.message}` };
+      
+      // エラーログ記録
+      safeLogOperation('assignWalkInSeat', { group, day, timeslot }, result);
+      
+      return result;
     } finally {
       lock.releaseLock();
     }
   } else {
-    return { success: false, message: "処理が混み合っています。少し待ってから再度お試しください。" };
+    const result = { success: false, message: "処理が混み合っています。少し待ってから再度お試しください。" };
+    
+    // ロック取得失敗のログ記録
+    safeLogOperation('assignWalkInSeat', { group, day, timeslot }, result);
+    
+    return result;
   }
 }
 
@@ -808,14 +951,25 @@ function verifyModePassword(mode, password) {
     const walkinPassword = props.getProperty('WALKIN_PASSWORD');
     const superAdminPassword = props.getProperty('SUPERADMIN_PASSWORD');
 
-    if (mode === 'admin') return { success: adminPassword && password === adminPassword };
-    if (mode === 'walkin') return { success: walkinPassword && password === walkinPassword };
-    if (mode === 'superadmin') return { success: superAdminPassword && password === superAdminPassword };
-    return { success: false };
+    let result;
+    if (mode === 'admin') result = { success: adminPassword && password === adminPassword };
+    else if (mode === 'walkin') result = { success: walkinPassword && password === walkinPassword };
+    else if (mode === 'superadmin') result = { success: superAdminPassword && password === superAdminPassword };
+    else result = { success: false };
+    
+    // ログ記録（パスワードは記録しない）
+    safeLogOperation('verifyModePassword', { mode }, result);
+    
+    return result;
 
   } catch (e) {
     Logger.log("verifyModePassword Error: " + e.message);
-    return { success: false };
+    const result = { success: false };
+    
+    // エラーログ記録
+    safeLogOperation('verifyModePassword', { mode }, result);
+    
+    return result;
   }
 }
 
@@ -1237,6 +1391,359 @@ function execDangerCommand(action, payload, password) {
     return performDangerAction(action, payload || {});
   } catch (e) {
     Logger.log('execDangerCommand Error: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+// ===============================================================
+// === ログ記録システム（既存システムに影響なし） ===
+// ===============================================================
+
+/**
+ * 操作ログをスプレッドシートに記録する関数
+ * @param {string} operation - 操作名
+ * @param {Object} params - パラメータ
+ * @param {Object} result - 結果
+ * @param {string} userAgent - ユーザーエージェント
+ * @param {string} ipAddress - IPアドレス
+ * @param {boolean} skipDuplicateCheck - 重複チェックをスキップするかどうか
+ */
+function logOperation(operation, params, result, userAgent, ipAddress, skipDuplicateCheck = false) {
+  try {
+    // ログ用スプレッドシートを取得または作成
+    const logSheet = getOrCreateLogSheet();
+    
+    // ログデータを準備
+    const logData = [
+      new Date(), // タイムスタンプ
+      operation, // 操作名
+      JSON.stringify(params), // パラメータ（JSON文字列）
+      JSON.stringify(result), // 結果（JSON文字列）
+      userAgent || 'Unknown', // ユーザーエージェント
+      ipAddress || 'Unknown', // IPアドレス
+      result.success ? 'SUCCESS' : 'ERROR' // ステータス
+    ];
+    
+    // ログを追加
+    logSheet.appendRow(logData);
+    
+    // ログが多くなりすぎないよう、古いログを削除（1000件を超えた場合）
+    const lastRow = logSheet.getLastRow();
+    if (lastRow > 1000) {
+      const rowsToDelete = lastRow - 1000;
+      logSheet.deleteRows(2, rowsToDelete);
+    }
+    
+  } catch (e) {
+    // ログ記録に失敗しても既存システムに影響を与えない
+    Logger.log('Log recording failed: ' + e.message);
+  }
+}
+
+/**
+ * クライアント監査ログをバッチで受け取り保存
+ * @param {Array<Object>} entries - ログエントリ配列
+ *  エントリ例: { ts, type, action, meta, ua, ip, sessionId, userId }
+ */
+function recordClientAudit(entries) {
+  try {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return { success: false, message: 'No entries' };
+    }
+    const sheet = getOrCreateClientAuditSheet();
+    const now = new Date();
+    const rows = entries.map(e => [
+      new Date(e.ts || now),
+      String(e.type || ''),
+      String(e.action || ''),
+      JSON.stringify(e.meta || {}),
+      String(e.sessionId || ''),
+      String(e.userId || ''),
+      String(e.ua || 'Unknown'),
+      String(e.ip || 'Unknown')
+    ]);
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+    // 直近5000件キープ
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 5001) {
+      const rowsToDelete = lastRow - 5001;
+      sheet.deleteRows(2, rowsToDelete);
+    }
+    return { success: true, saved: rows.length };
+  } catch (e) {
+    Logger.log('recordClientAudit failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * クライアント監査ログ用シートの取得/作成
+ */
+function getOrCreateClientAuditSheet() {
+  const props = PropertiesService.getScriptProperties();
+  const logSpreadsheetId = props.getProperty('LOG_SPREADSHEET_ID');
+  if (!logSpreadsheetId) {
+    throw new Error('LOG_SPREADSHEET_ID が設定されていません。');
+  }
+  const sheetName = props.getProperty('CLIENT_AUDIT_SHEET_NAME') || 'CLIENT_AUDIT';
+  const ss = SpreadsheetApp.openById(logSpreadsheetId);
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    const headers = ['Timestamp','EventType','Action','Metadata','SessionId','UserId','UserAgent','IPAddress'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#202124').setFontColor('#ffffff').setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 160);
+    sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 180);
+    sheet.setColumnWidth(4, 300);
+    sheet.setColumnWidth(5, 150);
+    sheet.setColumnWidth(6, 100);
+    sheet.setColumnWidth(7, 220);
+    sheet.setColumnWidth(8, 140);
+  }
+  return sheet;
+}
+
+/**
+ * サーバー側からクライアント監査ログ行を追記（権威ログ）
+ * @param {Array<Object>} entries - { type, action, meta, sessionId, userId, ua, ip }
+ */
+function appendClientAuditEntries(entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return;
+  const sheet = getOrCreateClientAuditSheet();
+  const now = new Date();
+  const rows = entries.map(e => [
+    new Date(e.ts || now),
+    String(e.type || ''),
+    String(e.action || ''),
+    JSON.stringify(e.meta || {}),
+    String(e.sessionId || ''),
+    String(e.userId || ''),
+    String(e.ua || 'Server'),
+    String(e.ip || 'Server')
+  ]);
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+}
+
+/**
+ * クライアント監査ログを取得
+ */
+function getClientAuditLogs(limit = 200, type = null, action = null) {
+  try {
+    const sheet = getOrCreateClientAuditSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { success: true, logs: [] };
+    const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    let logs = data.map(r => ({
+      timestamp: r[0],
+      type: r[1],
+      action: r[2],
+      metadata: r[3],
+      sessionId: r[4],
+      userId: r[5],
+      userAgent: r[6],
+      ipAddress: r[7]
+    }));
+    if (type) logs = logs.filter(l => l.type === type);
+    if (action) logs = logs.filter(l => l.action === action);
+    logs.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    logs = logs.slice(0, limit);
+    return { success: true, logs };
+  } catch (e) {
+    Logger.log('getClientAuditLogs failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * クライアント監査ログの統計
+ */
+function getClientAuditStatistics() {
+  try {
+    const sheet = getOrCreateClientAuditSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { success: true, statistics: {} };
+    const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+    const stats = {
+      total: data.length,
+      byType: {},
+      byAction: {}
+    };
+    data.forEach(r => {
+      const t = r[1];
+      const a = r[2];
+      stats.byType[t] = (stats.byType[t] || 0) + 1;
+      stats.byAction[a] = (stats.byAction[a] || 0) + 1;
+    });
+    return { success: true, statistics: stats };
+  } catch (e) {
+    Logger.log('getClientAuditStatistics failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 安全なログ記録関数（既存関数内で使用）
+ * @param {string} operation - 操作名
+ * @param {Object} params - パラメータ
+ * @param {Object} result - 結果
+ * @param {string} userAgent - ユーザーエージェント（オプション）
+ * @param {string} ipAddress - IPアドレス（オプション）
+ */
+function safeLogOperation(operation, params, result, userAgent = 'Unknown', ipAddress = 'Unknown') {
+  try {
+    logOperation(operation, params, result, userAgent, ipAddress, true);
+  } catch (e) {
+    // ログ記録に失敗しても既存システムに影響を与えない
+    Logger.log('Safe log recording failed for ' + operation + ': ' + e.message);
+  }
+}
+
+/**
+ * ログ用スプレッドシートを取得または作成
+ */
+function getOrCreateLogSheet() {
+  try {
+    // ログ用スプレッドシートIDとシート名を取得（プロパティから）
+    const props = PropertiesService.getScriptProperties();
+    const logSpreadsheetId = props.getProperty('LOG_SPREADSHEET_ID');
+    const logSheetName = props.getProperty('LOG_SHEET_NAME') || 'OPERATION_LOGS';
+    
+    if (!logSpreadsheetId) {
+      throw new Error('LOG_SPREADSHEET_ID が設定されていません。プロパティで設定してください。');
+    }
+    
+    // ID指定でスプレッドシートを取得
+    const spreadsheet = SpreadsheetApp.openById(logSpreadsheetId);
+    let logSheet = spreadsheet.getSheetByName(logSheetName);
+    
+    if (!logSheet) {
+      // ログシートが存在しない場合は作成
+      logSheet = spreadsheet.insertSheet(logSheetName);
+      
+      // ヘッダー行を設定
+      const headers = [
+        'Timestamp',
+        'Operation',
+        'Parameters',
+        'Result',
+        'UserAgent',
+        'IPAddress',
+        'Status'
+      ];
+      logSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      
+      // ヘッダー行のスタイルを設定
+      const headerRange = logSheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground('#4285f4');
+      headerRange.setFontColor('#ffffff');
+      headerRange.setFontWeight('bold');
+      
+      // 列幅を調整
+      logSheet.setColumnWidth(1, 150); // Timestamp
+      logSheet.setColumnWidth(2, 120); // Operation
+      logSheet.setColumnWidth(3, 200); // Parameters
+      logSheet.setColumnWidth(4, 200); // Result
+      logSheet.setColumnWidth(5, 150); // UserAgent
+      logSheet.setColumnWidth(6, 100); // IPAddress
+      logSheet.setColumnWidth(7, 80);  // Status
+    }
+    
+    return logSheet;
+  } catch (e) {
+    Logger.log('Failed to create log sheet: ' + e.message);
+    throw e;
+  }
+}
+
+/**
+ * ログを取得する関数
+ * @param {number} limit - 取得件数（デフォルト: 100）
+ * @param {string} operation - 特定の操作名でフィルタ（オプション）
+ * @param {string} status - ステータスでフィルタ（オプション）
+ */
+function getOperationLogs(limit = 100, operation = null, status = null) {
+  try {
+    const logSheet = getOrCreateLogSheet();
+    const lastRow = logSheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      return { success: true, logs: [] };
+    }
+    
+    // データを取得（ヘッダー行を除く）
+    const data = logSheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    
+    // ログデータをオブジェクトに変換
+    let logs = data.map(row => ({
+      timestamp: row[0],
+      operation: row[1],
+      parameters: row[2],
+      result: row[3],
+      userAgent: row[4],
+      ipAddress: row[5],
+      status: row[6]
+    }));
+    
+    // フィルタリング
+    if (operation) {
+      logs = logs.filter(log => log.operation === operation);
+    }
+    if (status) {
+      logs = logs.filter(log => log.status === status);
+    }
+    
+    // 最新順にソート
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // 件数制限
+    logs = logs.slice(0, limit);
+    
+    return { success: true, logs: logs };
+  } catch (e) {
+    Logger.log('Failed to get logs: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * ログ統計を取得する関数
+ */
+function getLogStatistics() {
+  try {
+    const logSheet = getOrCreateLogSheet();
+    const lastRow = logSheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      return { success: true, statistics: {} };
+    }
+    
+    const data = logSheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    
+    const stats = {
+      totalOperations: data.length,
+      successCount: data.filter(row => row[6] === 'SUCCESS').length,
+      errorCount: data.filter(row => row[6] === 'ERROR').length,
+      operationsByType: {},
+      recentActivity: data.slice(-10).map(row => ({
+        timestamp: row[0],
+        operation: row[1],
+        status: row[6]
+      }))
+    };
+    
+    // 操作別の集計
+    data.forEach(row => {
+      const operation = row[1];
+      stats.operationsByType[operation] = (stats.operationsByType[operation] || 0) + 1;
+    });
+    
+    return { success: true, statistics: stats };
+  } catch (e) {
+    Logger.log('Failed to get log statistics: ' + e.message);
     return { success: false, message: e.message };
   }
 }

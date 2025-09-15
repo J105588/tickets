@@ -26,6 +26,7 @@ class OptimizedLoader {
     this.dependencies.set('ui-optimizer', []);
     this.dependencies.set('performance-monitor', []);
     this.dependencies.set('pwa-install', []);
+    this.dependencies.set('audit-logger', ['optimized-api']);
   }
 
   async initializeCriticalModules() {
@@ -38,7 +39,7 @@ class OptimizedLoader {
     await Promise.all(errorHandlingModules.map(module => this.loadModule(module)));
     
     // セカンダリモジュールを並列読み込み
-    const secondaryModules = ['ui-optimizer', 'performance-monitor'];
+    const secondaryModules = ['audit-logger', 'ui-optimizer', 'performance-monitor'];
     await Promise.all(secondaryModules.map(module => this.loadModule(module)));
     
     // その他のモジュールを並列読み込み
@@ -92,6 +93,7 @@ class OptimizedLoader {
       'offline-sync-v2': () => this._loadOfflineSync(),
       'ui-optimizer': () => import('./ui-optimizer.js'),
       'performance-monitor': () => import('./performance-monitor.js'),
+      'audit-logger': () => import('./audit-logger.js'),
       'pwa-install': () => this._loadPWAInstall()
     };
 
