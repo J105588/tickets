@@ -24,7 +24,7 @@
 - [⚡ システム最適化](#-システム最適化)
 - [👨‍💼 管理者モード完全操作ガイド](#-管理者モード完全操作ガイド)
 - [🌐 API URL分散設定ガイド](#-api-url分散設定ガイド)
- - [🧪 DEMOモード](#-demoモード)
+- [🧪 DEMOモード](#-demoモード)
 
 ---
 
@@ -60,6 +60,7 @@
 - **サイドバーからのモード切り替え**（通常/管理者/当日券/最高管理者）
 - **パスワード認証**によるセキュリティ
 - **リアルタイムモード表示**
+  - URLパラメータでも指定可能: `?mode=<normal|admin|walkin|superadmin>&password=<パスワード>`
 
 ---
 
@@ -337,7 +338,7 @@ sequenceDiagram
   O-->>P: 同期完了通知
 ```
 
-### 当日券オフライン発行の詳細（最新フロー）
+### 当日券オフライン発行の詳細（最新フロー v2.3）
 ```mermaid
 graph TD
   A[当日券発行要求] --> B{オンライン?}
@@ -508,6 +509,26 @@ GasAPI.getAllUrls()           // 利用可能なURL一覧を取得
 - アクセス制御:
   - サイドバーから遷移時に `?auth=<token>` を付与（最高管理者専用）
   - `logs.html` 起動時に `auth === localStorage.superadminToken` を検証し、不一致なら赤字で「権限がありません」を表示
+
+#### ログアクセス制御フロー（最新版）
+```mermaid
+sequenceDiagram
+  participant U as ユーザー
+  participant SB as sidebar.js
+  participant L as logs.html
+  participant LS as localStorage
+
+  U->>SB: 操作ログメニューをクリック
+  SB->>LS: superadminToken を取得（なければ生成）
+  SB->>L: logs.html?auth=<token> に遷移
+  L->>LS: superadminToken を取得
+  L->>L: URLの auth と LS の token を比較
+  alt 一致
+    L-->>U: ログ一覧・統計を表示
+  else 不一致
+    L-->>U: 権限がありません（赤字表示）
+  end
+```
 
 ### セットアップ手順（監査ログ）
 1) GAS エディタ > プロジェクトのプロパティ > スクリプトのプロパティ に以下を追加
@@ -706,15 +727,23 @@ graph TD
   I --> J[選択状態クリア]
 ```
 
-### モード認証フロー
+### モード認証フロー（URLパラメータ対応）
 ```mermaid
 graph TD
-  A[モード変更ボタン] --> B[パスワード入力]
-  B --> C[GAS認証API呼び出し]
+  subgraph UI
+    A[サイドバーのモード変更] --> B[パスワード入力]
+    X[URL直アクセス: ?mode=...&password=...] --> C
+  end
+  B --> C[GAS verifyModePassword(mode,password)]
   C --> D{認証成功?}
-  D -->|はい| E[モード切り替え]
-  D -->|いいえ| F[エラーメッセージ]
-  E --> G[ページリロード]
+  D -->|はい| E[localStorage.currentMode を更新]
+  E --> F{mode == superadmin?}
+  F -->|はい| G[localStorage.superadminToken を生成/維持]
+  F -->|いいえ| H[トークンは変更なし]
+  G --> I[URLの機密を除去 (history.replaceState)]
+  H --> I
+  I --> J[ページリロード]
+  D -->|いいえ| K[エラー表示/監査ログ]
 ```
 
 ---
@@ -942,7 +971,7 @@ graph TD
 
 **合計: 12,573行**
 
-### 🔗 依存関係図（v2.2最適化版）
+### 🔗 依存関係図（v2.3 最新）
 ```mermaid
 graph TD
     subgraph "最適化層"
@@ -956,6 +985,7 @@ graph TD
     subgraph "設定・共通"
         F[config.js]
         G[styles.css]
+        EH[error-handler.js]
     end
     
     subgraph "オフライン同期"
@@ -967,6 +997,7 @@ graph TD
     subgraph "UI層"
         K[sidebar.js]
         L[sidebar.css]
+        PM[pwa-install.js]
     end
     
     subgraph "ページ別JS"
@@ -974,11 +1005,13 @@ graph TD
         N[timeslot-main.js]
         O[seats-main.js]
         P[walkin-main.js]
+        QL[logs-main.js]
     end
     
     subgraph "ページ別CSS"
         Q[seats.css]
         R[walkin.css]
+        LG[logs.css]
     end
     
     subgraph "ページ別HTML"
@@ -986,6 +1019,7 @@ graph TD
         T[timeslot.html]
         U[seats.html]
         V[walkin.html]
+        W[logs.html]
     end
     
     A --> B
@@ -1001,14 +1035,17 @@ graph TD
     D --> A
     E --> A
     F --> C
+    EH --> K
     H --> M
     H --> N
     H --> O
     H --> P
+    H --> QL
     K --> M
     K --> N
     K --> O
     K --> P
+    K --> QL
     G --> L
     G --> Q
     G --> R
@@ -1017,6 +1054,11 @@ graph TD
     L --> T
     L --> U
     L --> V
+    L --> W
+    PM --> S
+    PM --> T
+    PM --> U
+    PM --> V
     I --> S
     I --> T
     I --> U
@@ -1025,12 +1067,14 @@ graph TD
     N --> T
     O --> U
     P --> V
+    QL --> W
     Q --> U
     R --> V
     J -.-> S
     J -.-> T
     J -.-> U
     J -.-> V
+    J -.-> W
 ```
 
 #### バックエンド依存関係
@@ -1423,12 +1467,12 @@ graph TB
 
 ### アクセス方法
 ```javascript
-// URLパラメータ方式
-https://your-domain.com/index.html?mode=superadmin&key=YOUR_SECRET_KEY
+// URLパラメータ方式（推奨）
+https://your-domain.com/index.html?mode=superadmin&password=YOUR_SUPERADMIN_PASSWORD
 
-// ローカルストレージ方式
+// ローカルストレージ方式（デバッグ用途）
 localStorage.setItem('admin_mode', 'superadmin');
-localStorage.setItem('admin_key', 'your-secret-key');
+localStorage.setItem('admin_password', 'your-superadmin-password');
 location.reload();
 ```
 

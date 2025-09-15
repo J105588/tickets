@@ -294,11 +294,11 @@ window.applyModeChange = applyModeChange; // モード変更を適用する関�
 window.navigateToWalkin = navigateToWalkin; // 当日券ページへのナビゲーション関数もグローバル登録
 window.navigateToLogs = navigateToLogs;
 
-// URLパラメータでモード指定（mode, token）
+// URLパラメータでモード指定（mode, password）
 async function applyModeFromUrl() {
     const params = new URLSearchParams(location.search);
     const urlMode = params.get('mode');
-    const urlToken = params.get('token');
+    const urlPassword = params.get('password');
     if (!urlMode) return;
     const allowed = ['normal','admin','walkin','superadmin'];
     if (!allowed.includes(urlMode)) return;
@@ -313,15 +313,16 @@ async function applyModeFromUrl() {
             location.reload();
             return;
         }
-        if (!urlToken) return;
-        const result = await GasAPI.verifyModePassword(urlMode, urlToken);
+        if (!urlPassword) return;
+        const result = await GasAPI.verifyModePassword(urlMode, urlPassword);
         if (result && result.success) {
             localStorage.setItem('currentMode', urlMode);
             if (urlMode === 'superadmin') {
                 try {
                     let t = localStorage.getItem('superadminToken');
                     if (!t) {
-                        localStorage.setItem('superadminToken', urlToken);
+                        t = (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 24);
+                        localStorage.setItem('superadminToken', t);
                     }
                 } catch (_) {}
             }
