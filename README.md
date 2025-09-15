@@ -734,7 +734,7 @@ graph TD
     A[サイドバーのモード変更] --> B[パスワード入力]
     X[URL直アクセス: ?mode=...&password=...] --> C
   end
-  B --> C[GAS: verifyModePassword(mode, password)]
+  B --> C[GAS verifyModePassword]
   C --> D{認証成功?}
   D -->|はい| E[localStorage.currentMode を更新]
   E --> F{mode == superadmin?}
