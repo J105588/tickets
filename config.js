@@ -113,6 +113,12 @@ const apiUrlManager = new APIUrlManager();
 // バックグラウンド同期用URL（独立GASプロジェクトのURL）
 const BACKGROUND_SYNC_URL = "https://script.google.com/macros/s/AKfycbzOVVyo8K5-bCZkzD_N2EXFLC7AHQSgKljJo1UXzVB99vacoOsHDme4NIn_emoes-t3/exec"; // 例: "https://script.google.com/macros/s/OFFLINE_PROJECT_ID/exec"
 const DEBUG_MODE = true;
+// エラーハンドリング機能フラグ（既存機能に影響しないよう全てデフォルトOFF）
+const FEATURE_FLAGS = {
+  apiRetryEnabled: false, // API自動リトライ（指数バックオフ）
+  swSelfHealDefault: false, // SW自己修復の初期状態（実際のON/OFFはメッセージで切替）
+  adminNoticesEnabled: false // 管理者お知らせ機能（GAS未実装のためデフォルト無効）
+};
 
 // DEMOモード管理（URLパラメータで有効化、UIでは非表示）
 class DemoModeManager {
@@ -268,3 +274,4 @@ function debugLog(message, obj = null) {
 
 // 個別にエクスポート
 export { GAS_API_URLS, BACKGROUND_SYNC_URL, DEBUG_MODE, debugLog, apiUrlManager, DemoMode };
+export { FEATURE_FLAGS };

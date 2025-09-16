@@ -7,6 +7,7 @@ import { loadSidebar, toggleSidebar } from './sidebar.js';
 let currentLogs = [];
 let autoRefreshInterval = null;
 let isAutoRefreshEnabled = false;
+let lastFullKeySet = new Set();
 
 // 初期化
 window.onload = async () => {
@@ -33,11 +34,36 @@ window.onload = async () => {
     setupEventListeners();
     
     console.log('ログ表示システム初期化完了');
+
+    // 満席監視（30秒毎、ログページのみ）
+    try { setInterval(checkFullTimeslotsAndNotify, 30000); } catch (_) {}
+
+    // SWへ最高管理者モード登録（ログ画面はsuperadminのみアクセス想定）
+    try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'REGISTER_SUPERADMIN' });
+        // ページ離脱時に解除
+        window.addEventListener('beforeunload', () => {
+          try { navigator.serviceWorker.controller.postMessage({ type: 'UNREGISTER_SUPERADMIN' }); } catch(_) {}
+        });
+      }
+    } catch (_) {}
   } catch (error) {
     console.error('初期化エラー:', error);
     showError('初期化に失敗しました: ' + error.message);
   }
 };
+
+// 満席ブロードキャストを送るヘルパー（任意ページから呼び出し可能）
+try {
+  window.notifyFullSeats = async (group, day, timeslot) => {
+    try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'FULL_ALERT', group, day, timeslot });
+      }
+    } catch (_) {}
+  };
+} catch (_) {}
 
 // イベントリスナー設定
 function setupEventListeners() {
@@ -45,6 +71,14 @@ function setupEventListeners() {
   document.getElementById('operation-filter').addEventListener('change', applyFilters);
   document.getElementById('status-filter').addEventListener('change', applyFilters);
   document.getElementById('limit-filter').addEventListener('change', applyFilters);
+  const textFilter = document.getElementById('text-filter');
+  if (textFilter) textFilter.addEventListener('input', () => updateLogsTable());
+  const dateStart = document.getElementById('date-start');
+  const dateEnd = document.getElementById('date-end');
+  if (dateStart) dateStart.addEventListener('change', () => updateLogsTable());
+  if (dateEnd) dateEnd.addEventListener('change', () => updateLogsTable());
+  const errToggle = document.getElementById('error-highlight-toggle');
+  if (errToggle) errToggle.addEventListener('change', () => updateLogsTable());
   
   // モーダル外クリックで閉じる
   document.getElementById('log-detail-modal').addEventListener('click', (e) => {
@@ -59,6 +93,41 @@ function setupEventListeners() {
       closeLogDetail();
     }
   });
+
+  // SWからの満席通知を受信
+  try {
+    if (navigator.serviceWorker && navigator.serviceWorker.addEventListener) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        const data = event.data || {};
+        if (data.type === 'FULL_ALERT') {
+          try { showFullAlertBanner(data); } catch (_) {}
+        }
+      });
+    }
+  } catch (_) {}
+}
+
+async function checkFullTimeslotsAndNotify() {
+  try {
+    const resp = await GasAPI._callApi('getFullTimeslots', []);
+    if (!resp || !resp.success || !Array.isArray(resp.full)) return;
+    const current = new Set(resp.full.map(x => `${x.group}|${x.day}|${x.timeslot}`));
+    // 新規満席のみ通知
+    for (const key of current) {
+      if (!lastFullKeySet.has(key)) {
+        const [group, day, timeslot] = key.split('|');
+        // SWへ自動通知
+        try {
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'FULL_ALERT', group, day, timeslot });
+          }
+        } catch (_) {}
+        // ページ内バナーも即時表示
+        try { showFullAlertBanner({ group, day, timeslot }); } catch (_) {}
+      }
+    }
+    lastFullKeySet = current;
+  } catch (_) {}
 }
 
 // 統計情報を読み込み
@@ -124,7 +193,8 @@ async function loadLogs() {
     
     const limit = parseInt(document.getElementById('limit-filter').value) || 100;
     const type = document.getElementById('operation-filter').value || null;
-    const response = await GasAPI._callApi('getClientAuditLogs', [limit, type, null]);
+    const status = document.getElementById('status-filter').value || null;
+    const response = await GasAPI._callApi('getClientAuditLogs', [limit, type, status]);
     
     if (response.success) {
       currentLogs = response.logs || [];
@@ -173,18 +243,22 @@ async function loadOperationList() {
 function updateLogsTable() {
   const tbody = document.getElementById('logs-table-body');
   
-  if (currentLogs.length === 0) {
+  const filtered = getFilteredLogs();
+
+  if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="no-data">ログがありません</td></tr>';
     return;
   }
   
-  tbody.innerHTML = currentLogs.map(log => {
+  const isHighlightEnabled = (() => { try { return document.getElementById('error-highlight-toggle')?.checked !== false; } catch(_) { return true; } })();
+
+  tbody.innerHTML = filtered.map(log => {
     const timestamp = new Date(log.timestamp).toLocaleString('ja-JP');
     const shortMeta = truncateJson(log.metadata, 80);
     
     // エラーログかどうかを判定
     const isError = isErrorLog(log);
-    const errorClass = isError ? 'error-row' : '';
+    const errorClass = isHighlightEnabled && isError ? 'error-row' : '';
     
     return `
       <tr class="${errorClass}">
@@ -198,6 +272,81 @@ function updateLogsTable() {
       </tr>
     `;
   }).join('');
+}
+
+// フィルタリング処理（テキスト/日付）
+function getFilteredLogs() {
+  const text = (document.getElementById('text-filter')?.value || '').trim().toLowerCase();
+  const startStr = document.getElementById('date-start')?.value || '';
+  const endStr = document.getElementById('date-end')?.value || '';
+  let startTs = null;
+  let endTs = null;
+  try { if (startStr) { startTs = new Date(startStr + 'T00:00:00').getTime(); } } catch(_) {}
+  try { if (endStr) { endTs = new Date(endStr + 'T23:59:59.999').getTime(); } } catch(_) {}
+
+  return currentLogs.filter(log => {
+    // 日付範囲
+    try {
+      const ts = new Date(log.timestamp).getTime();
+      if (startTs && ts < startTs) return false;
+      if (endTs && ts > endTs) return false;
+    } catch(_) {}
+
+    // テキスト検索
+    if (text) {
+      const haystack = [
+        String(log.type || ''),
+        String(log.action || ''),
+        String(log.sessionId || ''),
+        String(log.ipAddress || ''),
+        (() => { try { return JSON.stringify(JSON.parse(log.metadata || '{}')); } catch(_) { return String(log.metadata || ''); } })(),
+        String(log.userAgent || '')
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(text)) return false;
+    }
+
+    return true;
+  });
+}
+
+// フィルタークリア
+function clearFilters() {
+  try { document.getElementById('operation-filter').value = ''; } catch(_) {}
+  try { document.getElementById('status-filter').value = ''; } catch(_) {}
+  try { document.getElementById('text-filter').value = ''; } catch(_) {}
+  try { document.getElementById('date-start').value = ''; } catch(_) {}
+  try { document.getElementById('date-end').value = ''; } catch(_) {}
+  updateLogsTable();
+}
+
+// CSVエクスポート
+function exportLogsCSV() {
+  const rows = getFilteredLogs();
+  if (!rows || rows.length === 0) { alert('エクスポート対象のログがありません'); return; }
+  const headers = ['timestamp','type','action','metadata','sessionId','ipAddress','userAgent'];
+  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => {
+    let v = r[h];
+    if (h === 'metadata') {
+      try { v = JSON.stringify(JSON.parse(r.metadata || '{}')); } catch(_) { v = String(r.metadata || ''); }
+    }
+    if (h === 'timestamp') {
+      try { v = new Date(r.timestamp).toISOString(); } catch(_) { v = String(r.timestamp || ''); }
+    }
+    const s = String(v == null ? '' : v);
+    // CSVエスケープ
+    const needsQuote = /[",\n]/.test(s);
+    const esc = s.replace(/"/g, '""');
+    return needsQuote ? '"' + esc + '"' : esc;
+  }).join(','))).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `logs_${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
 }
 
 // エラーログかどうかを判定
@@ -272,6 +421,21 @@ function showLogDetail(timestamp) {
   
   // モーダルを表示
   document.getElementById('log-detail-modal').classList.add('show');
+}
+
+// 満席通知のバナー表示
+function showFullAlertBanner(data) {
+  const el = document.getElementById('full-alert');
+  if (!el) return;
+  const text = (() => {
+    try {
+      return `${data.group || ''} ${data.day || ''}-${data.timeslot || ''} が満席になりました`;
+    } catch (_) { return '満席通知を受信しました'; }
+  })();
+  el.textContent = text;
+  el.style.display = '';
+  // 一定時間後に自動で隠す
+  setTimeout(() => { try { el.style.display = 'none'; } catch (_) {} }, 8000);
 }
 
 // ログ詳細を閉じる

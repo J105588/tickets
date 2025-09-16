@@ -1,5 +1,9 @@
 // sw.js - 静的資産キャッシュとオフライン表示の強化版（PWA更新通知対応）
 const CACHE_NAME = 'tickets-optimized-v4';
+// 自己修復（self-heal）機能のフラグ（デフォルトOFF。クライアントからメッセージでONにできる）
+let SELF_HEAL_ENABLED = false;
+// 最高管理者モードのクライアント（window client id の集合）
+const SUPERADMIN_CLIENT_IDS = new Set();
 const CRITICAL_ASSETS = [
 	'./',
 	'./index.html',
@@ -83,6 +87,33 @@ self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SKIP_WAITING') {
 		self.skipWaiting();
 	}
+	// ランタイムで自己修復を切り替え
+	if (event.data && event.data.type === 'SET_SELF_HEAL') {
+		SELF_HEAL_ENABLED = !!event.data.enabled;
+		try { console.log('[SW] SELF_HEAL_ENABLED =', SELF_HEAL_ENABLED); } catch(_) {}
+	}
+	// 最高管理者モード登録/解除
+	if (event.data && event.data.type === 'REGISTER_SUPERADMIN') {
+		try { const id = (event.source && event.source.id) || (event.clientId) || null; if (id) SUPERADMIN_CLIENT_IDS.add(id); } catch(_) {}
+	}
+	if (event.data && event.data.type === 'UNREGISTER_SUPERADMIN') {
+		try { const id = (event.source && event.source.id) || (event.clientId) || null; if (id) SUPERADMIN_CLIENT_IDS.delete(id); } catch(_) {}
+	}
+	// FULLアラートを全クライアントへブロードキャスト
+	if (event.data && event.data.type === 'FULL_ALERT') {
+		const payload = { type: 'FULL_ALERT', group: event.data.group, day: event.data.day, timeslot: event.data.timeslot, ts: Date.now() };
+		event.waitUntil((async () => {
+			try {
+				const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+				clients.forEach(c => { try { if (SUPERADMIN_CLIENT_IDS.has(c.id)) { c.postMessage(payload); } } catch(_) {} });
+				if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
+					const title = '満席になりました';
+					const body = `${payload.group} ${payload.day}-${payload.timeslot} が満席になりました`;
+					await self.registration.showNotification(title, { body, tag: 'full-alert', renotify: true });
+				}
+			} catch (_) {}
+		})());
+	}
 });
 
 // 新しいService Workerが利用可能になった時の処理
@@ -162,7 +193,18 @@ self.addEventListener('fetch', (event) => {
 					try { const clone = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, clone)).catch(() => {}); } catch (_) {}
 					return res;
 				})
-				.catch(() => cached || new Response('', { status: 504 }));
+				.catch(async (err) => {
+					// ネットワーク失敗時の自己修復ロジック（有効時のみ）
+					if (SELF_HEAL_ENABLED && cached) {
+						try {
+							const cache = await caches.open(CACHE_NAME);
+							await cache.delete(req);
+							// 削除後に再取得を試行（待たない）
+							event.waitUntil(fetch(req).then(r => cache.put(req, r.clone())).catch(() => {}));
+						} catch (_) {}
+					}
+					return cached || new Response('', { status: 504 });
+				});
 			return cached || fetchPromise;
 		})
 	);

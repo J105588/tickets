@@ -1,8 +1,29 @@
 // api.js
-import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager } from './config.js';
+import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager, FEATURE_FLAGS } from './config.js';
 import audit from './audit-logger.js';
 
 class GasAPI {
+  static async _retryWithBackoff(task, shouldRetry, opts = {}) {
+    const {
+      retries = 2,
+      baseDelayMs = 300,
+      maxDelayMs = 2000,
+      jitter = true
+    } = opts;
+    let attempt = 0;
+    let lastErr;
+    while (attempt <= retries) {
+      try { return await task(); } catch (e) {
+        lastErr = e;
+        if (!shouldRetry(e, attempt)) break;
+        const exp = Math.min(maxDelayMs, baseDelayMs * Math.pow(2, attempt));
+        const delay = jitter ? Math.floor(exp * (0.5 + Math.random() * 0.5)) : exp;
+        await new Promise(r => setTimeout(r, delay));
+        attempt++;
+      }
+    }
+    throw lastErr;
+  }
   static _callApi(functionName, params = []) {
     return new Promise((resolve, reject) => {
       try {
@@ -152,7 +173,14 @@ class GasAPI {
           }
         };
         
-        (document.head || document.body || document.documentElement).appendChild(script);
+        const execute = () => (document.head || document.body || document.documentElement).appendChild(script);
+
+        if (FEATURE_FLAGS.apiRetryEnabled) {
+          // JSONPはエラー時 onerror でフェイルオーバー、ここでは初回実行のみ
+          try { execute(); } catch (e) { /* noop */ }
+        } else {
+          try { execute(); } catch (e) { /* noop */ }
+        }
       } catch (err) {
         console.error('API call exception:', err);
         // 例外時もオフライン同期システムに委譲を試行
@@ -320,6 +348,9 @@ class GasAPI {
 
   // 管理者向け通知を取得（ポーリング）
   static async fetchAdminNotices(sinceTimestamp) {
+    if (!FEATURE_FLAGS.adminNoticesEnabled) {
+      return { success: false, error: 'adminNotices disabled' };
+    }
     try {
       const resp = await this._callApi('fetchAdminNotices', [sinceTimestamp || 0]);
       return resp;

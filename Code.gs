@@ -60,6 +60,7 @@ function doPost(e) {
       'recordClientAudit': recordClientAudit
       , 'getClientAuditLogs': getClientAuditLogs
       , 'getClientAuditStatistics': getClientAuditStatistics
+      , 'getFullTimeslots': getFullTimeslots
     };
 
     if (functionMap[funcName]) {
@@ -1783,6 +1784,46 @@ function getLogStatistics() {
     return { success: true, statistics: stats };
   } catch (e) {
     Logger.log('Failed to get log statistics: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 現在満席（"空" が1つも無い）になっている公演一覧を返す。
+ * 返却: { success: true, full: [{ group, day, timeslot }] }
+ */
+function getFullTimeslots() {
+  try {
+    const result = [];
+    const keys = Object.keys(SEAT_SHEET_IDS || {});
+    for (const key of keys) {
+      try {
+        // キー形式: "{group}-{day}-{timeslot}" を想定
+        const parts = key.split('-');
+        if (parts.length < 3) continue;
+        const group = parts[0];
+        const day = parts[1];
+        const timeslot = parts[2];
+        const sheet = getSheet(group, day, timeslot, 'SEAT');
+        if (!sheet) continue;
+        const lastRow = sheet.getLastRow();
+        if (lastRow <= 1) continue;
+        const statuses = sheet.getRange(2, 3, lastRow - 1, 1).getValues(); // C列（ステータス）
+        let hasEmpty = false;
+        for (let i = 0; i < statuses.length; i++) {
+          const s = (statuses[i][0] || '').toString().trim();
+          if (s === '空' || s === '') { hasEmpty = true; break; }
+        }
+        if (!hasEmpty) {
+          result.push({ group, day, timeslot });
+        }
+      } catch (inner) {
+        // 個別の失敗はスキップ
+      }
+    }
+    return { success: true, full: result };
+  } catch (e) {
+    Logger.log('getFullTimeslots failed: ' + e.message);
     return { success: false, message: e.message };
   }
 }
