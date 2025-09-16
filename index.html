@@ -89,12 +89,41 @@
       <p>しばらくお待ちください。操作はできません。</p>
     </div>
   </div>
+  
+  <!-- iOS ホーム画面追加モーダル -->
+  <div id="ios-homescreen-modal" class="modal">
+    <div class="modal-content" style="text-align: center; max-width: 400px;">
+      <span class="close-button" onclick="document.getElementById('ios-homescreen-modal').classList.remove('show')">&times;</span>
+      <h3>ホーム画面への追加</h3>
+      <p>iOSでプッシュ通知を受け取るには、このウェブサイトをホーム画面に追加する必要があります。</p>
+      <div style="margin: 20px 0;">
+        <p><strong>手順:</strong></p>
+        <ol style="text-align: left;">
+          <li>下部の<strong>共有ボタン</strong>をタップ</li>
+          <li><strong>「ホーム画面に追加」</strong>を選択</li>
+          <li>右上の<strong>「追加」</strong>をタップ</li>
+        </ol>
+      </div>
+      <div>
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjMDA3YmZmIj48cGF0aCBkPSJNMTIsMTVMMTcsMTBIMTRWNEgxMFYxMEg3TDEyLDE1TTIxLDE0VjE4QTMsMy4wIDAsMCwxIDE4LDIxSDZBMywzLjAgMCwwLDEgMywxOFY0QTMsMy4wIDAsMCwxIDYsMUgxMkExLDEuMCAwLDAsMSAxMywyQTEsMS4wIDAsMCwxIDEyLDNINkEyLDIuMCAwLDAsMCA1LDRIMTlBMiwyLjAgMCwwLDEgMjEsNlYxNFoiIC8+PC9zdmc+" alt="ホーム画面に追加アイコン" style="width: 48px; height: 48px;">
+      </div>
+      <button class="btn btn-primary" style="margin-top: 20px;" onclick="document.getElementById('ios-homescreen-modal').classList.remove('show')">閉じる</button>
+    </div>
+  </div>
+
+  <!-- プッシュ通知設定ボタン -->
+  <div id="push-notification-container" class="push-notification-container" style="display: none;">
+    <button id="enable-push-btn" class="push-btn">満席通知を有効にする</button>
+  </div>
 
   <!-- 最適化されたスクリプトローダー（統合版） -->
   <script type="module" src="optimized-loader.js"></script>
   
   <!-- 既存のスクリプト（最適化されたローダーが管理） -->
   <script type="module" src="index-main.js"></script>
+  
+  <!-- プッシュ通知スクリプト -->
+  <script type="module" src="push-notification.js"></script>
   
   <!-- PWA Service Worker Registration -->
   <script>
