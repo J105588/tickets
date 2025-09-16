@@ -64,24 +64,57 @@ function setupEventListeners() {
 // 統計情報を読み込み
 async function loadStatistics() {
   try {
+    console.log('統計情報を読み込み中...');
     const response = await GasAPI._callApi('getClientAuditStatistics', []);
     
-    if (response.success) {
+    if (response && response.success) {
+      console.log('統計情報取得成功:', response.statistics);
       updateStatistics(response.statistics);
     } else {
-      console.warn('統計情報の取得に失敗:', response.message);
+      console.warn('統計情報の取得に失敗:', response?.message || 'Unknown error');
+      // デフォルト値を表示
+      updateStatistics({
+        totalOperations: 0,
+        successCount: 0,
+        errorCount: 0
+      });
     }
   } catch (error) {
     console.error('統計情報読み込みエラー:', error);
+    // エラー時もデフォルト値を表示
+    updateStatistics({
+      totalOperations: 0,
+      successCount: 0,
+      errorCount: 0
+    });
   }
 }
 
 // 統計情報を更新
 function updateStatistics(stats) {
-  document.getElementById('total-operations').textContent = stats.totalOperations || 0;
-  document.getElementById('success-count').textContent = stats.successCount || 0;
-  document.getElementById('error-count').textContent = stats.errorCount || 0;
+  // 総操作数
+  const totalOps = stats.totalOperations || 0;
+  document.getElementById('total-operations').textContent = totalOps.toLocaleString();
+  
+  // 成功数
+  const successCount = stats.successCount || 0;
+  document.getElementById('success-count').textContent = successCount.toLocaleString();
+  
+  // エラー数
+  const errorCount = stats.errorCount || 0;
+  document.getElementById('error-count').textContent = errorCount.toLocaleString();
+  
+  // 最終更新時刻
   document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
+  
+  // デバッグ情報をコンソールに出力
+  console.log('統計情報更新:', {
+    totalOperations: totalOps,
+    successCount: successCount,
+    errorCount: errorCount,
+    successRate: totalOps > 0 ? ((successCount / totalOps) * 100).toFixed(1) + '%' : '0%',
+    errorRate: totalOps > 0 ? ((errorCount / totalOps) * 100).toFixed(1) + '%' : '0%'
+  });
 }
 
 // ログを読み込み

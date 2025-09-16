@@ -1565,19 +1565,58 @@ function getClientAuditStatistics() {
   try {
     const sheet = getOrCreateClientAuditSheet();
     const lastRow = sheet.getLastRow();
-    if (lastRow <= 1) return { success: true, statistics: {} };
+    if (lastRow <= 1) {
+      return { 
+        success: true, 
+        statistics: {
+          totalOperations: 0,
+          successCount: 0,
+          errorCount: 0,
+          byType: {},
+          byAction: {}
+        }
+      };
+    }
+    
     const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
     const stats = {
-      total: data.length,
+      totalOperations: data.length,
+      successCount: 0,
+      errorCount: 0,
       byType: {},
       byAction: {}
     };
-    data.forEach(r => {
-      const t = r[1];
-      const a = r[2];
-      stats.byType[t] = (stats.byType[t] || 0) + 1;
-      stats.byAction[a] = (stats.byAction[a] || 0) + 1;
+    
+    data.forEach(row => {
+      const type = row[1]; // EventType
+      const action = row[2]; // Action
+      const metadata = row[3]; // Metadata
+      
+      // タイプ別カウント
+      stats.byType[type] = (stats.byType[type] || 0) + 1;
+      
+      // アクション別カウント
+      stats.byAction[action] = (stats.byAction[action] || 0) + 1;
+      
+      // 成功/エラー判定
+      try {
+        if (metadata && metadata !== 'null') {
+          const metaObj = JSON.parse(metadata);
+          if (metaObj.success === false || metaObj.error || action.includes('error') || action.includes('Error')) {
+            stats.errorCount++;
+          } else {
+            stats.successCount++;
+          }
+        } else {
+          // メタデータがない場合は成功として扱う
+          stats.successCount++;
+        }
+      } catch (e) {
+        // JSON解析エラーの場合は成功として扱う
+        stats.successCount++;
+      }
     });
+    
     return { success: true, statistics: stats };
   } catch (e) {
     Logger.log('getClientAuditStatistics failed: ' + e.message);

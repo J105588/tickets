@@ -52,6 +52,12 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   text-align: center;
   border-left: 4px solid #007bff;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .stat-card.success {
@@ -63,15 +69,27 @@
 }
 
 .stat-number {
-  font-size: 2em;
+  font-size: 2.5rem;
   font-weight: bold;
   color: #333;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  font-family: 'Courier New', monospace;
+}
+
+.stat-card.success .stat-number {
+  color: #28a745;
+}
+
+.stat-card.error .stat-number {
+  color: #dc3545;
 }
 
 .stat-label {
   color: #666;
   font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* フィルター */
