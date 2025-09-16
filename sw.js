@@ -68,7 +68,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
-		caches.keys().then(keys => Promise.all(keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve()))))
+		Promise.all([
+			caches.keys().then(keys => Promise.all(keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve())))),
+			// ナビゲーションプリロードを有効化（対応ブラウザのみ）
+			(self.registration.navigationPreload ? self.registration.navigationPreload.enable() : Promise.resolve())
+		])
 	);
 	// 既存クライアントへ即適用
 	self.clients.claim();
@@ -111,24 +115,37 @@ self.addEventListener('fetch', (event) => {
 	const req = event.request;
 	const url = new URL(req.url);
 
-	// ナビゲーション(HTML)はキャッシュ優先で提供
+	// ナビゲーション(HTML)はキャッシュ優先 + navigation preload 対応
 	if (req.mode === 'navigate') {
-		event.respondWith(
-			caches.match(req, { ignoreSearch: true })
-				.then(cached => {
-					if (cached) return cached;
-					// 初回アクセス時はネットワーク→キャッシュ化
-					return fetch(req)
-						.then(res => {
-							try { const clone = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, clone)).catch(() => {}); } catch (_) {}
-							return res;
-						})
-						.catch(() => {
-							// フォールバック: 既知ページのいずれか
-							return caches.match('./seats.html') || caches.match('./index.html');
-						});
-				})
-		);
+		event.respondWith((async () => {
+			try {
+				const cached = await caches.match(req, { ignoreSearch: true });
+				if (cached) return cached;
+
+				// navigation preload があれば先に利用
+				let response = undefined;
+				if (event.preloadResponse) {
+					response = await event.preloadResponse;
+				}
+				if (!response) {
+					response = await fetch(req);
+				}
+
+				// キャッシュ書き込みは待たずに完了を待機
+				event.waitUntil((async () => {
+					try {
+						const clone = response.clone();
+						const cache = await caches.open(CACHE_NAME);
+						await cache.put(req, clone);
+					} catch (_) {}
+				})());
+
+				return response;
+			} catch (_) {
+				// フォールバック: 既知ページのいずれか
+				return (await caches.match('./seats.html')) || (await caches.match('./index.html'));
+			}
+		})());
 		return;
 	}
 
