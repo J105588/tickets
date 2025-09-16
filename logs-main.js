@@ -181,8 +181,13 @@ function updateLogsTable() {
   tbody.innerHTML = currentLogs.map(log => {
     const timestamp = new Date(log.timestamp).toLocaleString('ja-JP');
     const shortMeta = truncateJson(log.metadata, 80);
+    
+    // エラーログかどうかを判定
+    const isError = isErrorLog(log);
+    const errorClass = isError ? 'error-row' : '';
+    
     return `
-      <tr>
+      <tr class="${errorClass}">
         <td>${timestamp}</td>
         <td>${log.type}</td>
         <td>${log.action}</td>
@@ -193,6 +198,24 @@ function updateLogsTable() {
       </tr>
     `;
   }).join('');
+}
+
+// エラーログかどうかを判定
+function isErrorLog(log) {
+  try {
+    if (log.metadata && log.metadata !== 'null') {
+      const metaObj = JSON.parse(log.metadata);
+      // メタデータにsuccess: false、error、またはアクション名にerrorが含まれている場合はエラー
+      if (metaObj.success === false || metaObj.error || 
+          log.action.includes('error') || log.action.includes('Error')) {
+        return true;
+      }
+    }
+    return false;
+  } catch (e) {
+    // JSON解析エラーの場合はエラーとして扱わない
+    return false;
+  }
 }
 
 // JSON文字列を短縮
@@ -218,10 +241,21 @@ function showLogDetail(timestamp) {
   const log = currentLogs.find(l => l.timestamp === timestamp);
   if (!log) return;
   
+  // エラーログかどうかを判定
+  const isError = isErrorLog(log);
+  
   // モーダルにデータを設定
   document.getElementById('detail-timestamp').textContent = new Date(log.timestamp).toLocaleString('ja-JP');
   document.getElementById('detail-operation').textContent = `${log.type} / ${log.action}`;
-  document.getElementById('detail-status').innerHTML = '';
+  
+  // ステータス表示（エラーの場合は赤色で強調）
+  const statusElement = document.getElementById('detail-status');
+  if (isError) {
+    statusElement.innerHTML = '<span class="status-error">エラー</span>';
+  } else {
+    statusElement.innerHTML = '<span class="status-success">成功</span>';
+  }
+  
   document.getElementById('detail-ip').textContent = log.ipAddress || '-';
   
   // JSON表示

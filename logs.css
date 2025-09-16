@@ -217,6 +217,21 @@
   color: #721c24;
 }
 
+/* エラーログ行の強調表示 */
+.error-row {
+  background-color: #fff5f5 !important;
+  border-left: 4px solid #dc3545 !important;
+}
+
+.error-row:hover {
+  background-color: #ffeaea !important;
+}
+
+.error-row td {
+  color: #721c24;
+  font-weight: 500;
+}
+
 /* JSON表示 */
 .json-display {
   background-color: #f8f9fa;
