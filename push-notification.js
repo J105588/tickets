@@ -148,10 +148,12 @@ class PushNotificationManager {
         });
         
         if (isAdminMode) {
-            container.style.display = 'block';
+            container.classList.remove('hide');
+            container.classList.add('show');
             console.log('[Admin Check] 通知コンテナを表示しました');
         } else {
-            container.style.display = 'none';
+            container.classList.remove('show');
+            container.classList.add('hide');
             console.log('[Admin Check] 通知コンテナを非表示にしました');
         }
     }
@@ -1086,6 +1088,16 @@ window.enableSuperAdminMode = function() {
     window.isSuperAdmin = true;
     localStorage.setItem('isSuperAdmin', 'true');
     pushNotificationManager.updateNotificationContainerVisibility();
+    
+    // 強制的に表示を確認
+    const container = document.getElementById('push-notification-container');
+    if (container) {
+        console.log('コンテナの現在の状態:', {
+            classList: Array.from(container.classList),
+            computedStyle: window.getComputedStyle(container).display,
+            style: container.style.display
+        });
+    }
 };
 
 window.disableSuperAdminMode = function() {
@@ -1098,4 +1110,13 @@ window.disableSuperAdminMode = function() {
 window.checkAdminStatus = function() {
     console.log('現在の管理者モード状態:', pushNotificationManager.checkAdminMode());
     return pushNotificationManager.checkAdminMode();
+};
+
+window.forceShowNotification = function() {
+    const container = document.getElementById('push-notification-container');
+    if (container) {
+        container.classList.remove('hide');
+        container.classList.add('show');
+        console.log('強制的に通知コンテナを表示しました');
+    }
 };

@@ -42,6 +42,18 @@
       align-items: flex-end;
     }
 
+    .push-notification-container.show {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    .push-notification-container.hide {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
+
     .push-btn {
       background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
       color: white;
@@ -198,7 +210,7 @@
   </div>
 
   <!-- プッシュ通知設定ボタン -->
-  <div id="push-notification-container" class="push-notification-container" style="display: none;">
+  <div id="push-notification-container" class="push-notification-container hide">
     <button id="enable-push-btn" class="push-btn">満席通知を有効にする</button>
     <button id="test-notification-btn" class="push-btn test-btn" style="display: none;">試験配信を送信</button>
     <div id="notification-status" class="notification-status" style="display: none;">
