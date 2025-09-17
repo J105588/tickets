@@ -162,7 +162,7 @@ class PushNotificationManager {
 
             // 3. URLパラメータでチェック
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('admin') === 'true') {
+            if (urlParams.get('superadmin') === 'true') {
                 return true;
             }
 
@@ -877,7 +877,7 @@ class PushNotificationManager {
             const result = await this.handleIOSNotifications();
             if (!result) {
                 // フォールバックとしてホーム画面追加ガイドを表示
-                this.showIOSInstallGuide();
+            this.showIOSInstallGuide();
             }
             if (result) {
                 this.updateNotificationUI(true);
