@@ -529,7 +529,7 @@
                     <span class="status-indicator" id="monitoring-status-indicator">停止中</span>
                 </div>
             </div>
-
+            
             <!-- GAS URL 情報とローテーション操作 -->
             <div id="api-url-panel" style="margin-bottom:12px;background:#f8f9fa;border:1px solid #e1e5e9;border-radius:8px;padding:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                 <span style="font-weight:600;color:#333;">接続先GAS:</span>
@@ -1261,11 +1261,11 @@
                     // 初回のみ空表示に切り替え
                     const existingGrid = this.elements.timeslotsContainer.querySelector('#timeslots-grid');
                     if (!existingGrid) {
-                        this.elements.timeslotsContainer.innerHTML = '<div class="loading">公演データがありません</div>';
+                    this.elements.timeslotsContainer.innerHTML = '<div class="loading">公演データがありません</div>';
                     }
                     return;
                 }
-
+                
                 // グリッド要素を確保（無ければ一度だけ作成）
                 let gridEl = this.elements.timeslotsContainer.querySelector('#timeslots-grid');
                 if (!gridEl) {
@@ -1368,23 +1368,23 @@
                 el.className = 'timeslot-card';
                 el.setAttribute('data-id', id);
                 el.innerHTML = `
-                    <div class="timeslot-header">
+                        <div class="timeslot-header">
                         <h4 class="timeslot-title"></h4>
                         <span class="capacity-badge"></span>
-                    </div>
-                    <div class="timeslot-stats">
-                        <div class="stat-item">
+                        </div>
+                        <div class="timeslot-stats">
+                            <div class="stat-item">
                             <p class="stat-value" data-field="emptySeats"></p>
-                            <p class="stat-label">空席</p>
-                        </div>
-                        <div class="stat-item">
+                                <p class="stat-label">空席</p>
+                            </div>
+                            <div class="stat-item">
                             <p class="stat-value" data-field="occupiedSeats"></p>
-                            <p class="stat-label">利用中</p>
+                                <p class="stat-label">利用中</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="timeslot-progress">
+                        <div class="timeslot-progress">
                         <div class="progress-bar"></div>
-                    </div>
+                        </div>
                     <p class="last-updated"></p>
                 `;
                 this.updateTimeslotCard(el, timeslot);
