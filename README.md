@@ -553,6 +553,95 @@ sequenceDiagram
 - **URL管理設定**: `config.js` の `APIUrlManager` クラス
 - **ローテーション間隔**: デフォルト5分間隔（`rotationInterval`）
 
+### 通知メール宛先の設定（重要）
+- 宛先リストはフロント側の `config.js` にハードコードされています。
+  - `FULL_CAPACITY_NOTIFICATION_EMAILS` を編集してください。
+- クライアントは送信時にこのリストを必ず注入し、GAS には統合済みの `emails` 配列を渡します。
+- GAS 側の `sendStatusNotificationEmail` は受け取った `emails` をそのまま送信に使用します。
+  - そのため、宛先変更は原則「`config.js` のみ」で完結します。
+  - 例外として、GAS 内で別の固定リストを参照する独自実装を残している場合は、そちらも合わせて更新してください。
+
+---
+
+## 🆕 監視・通知・URL・通信の最新仕様（ダッシュボード強化）
+
+### ダッシュボード更新ポリシー（UI保持・バックグラウンド更新）
+- 初回取得のみローディング表示。
+- 以降は15秒ごとにバックグラウンドで再取得し、UIは保持したまま差分更新（カードを再生成せず、要素をインプレース更新）。
+- 受信済みの公演カードは常時表示（新規・更新のみ書き換え）。
+- 更新遅延カードは `stale` クラス付与で視覚化可能。
+- 上部ステータスカード（満席/緊急/警告/正常）をクリックすると、該当ステータスの公演一覧モーダルを表示。
+
+### メール通知ポリシー（重複抑止・内容明確化）
+- 送信タイミング:
+  - 初回取得直後に異常（normal 以外）があれば即時送信。
+  - 以降は5分ごとに再評価。前回送信時から異常セットに変化がある場合のみ再送信。
+- 変化検出:
+  - 公演キー（`group|day|timeslot`）＋ `capacityLevel` ＋ `emptySeats` ＋ `occupiedSeats` を署名化して比較。
+- 宛先:
+  - `config.js` の `FULL_CAPACITY_NOTIFICATION_EMAILS` を必ず注入（重複排除）。
+- 送信堅牢化:
+  - バッチ送信失敗時は受信者単位でフォールバック送信（リトライ付き）。
+  - 部分成功時は成功件数/失敗件数を応答に含め、ダッシュボードは部分成功を成功として扱えるように設計。
+- メール本文（例）:
+  - 件名: `[座席監視] 異常ステータス N件`
+  - 本文（公演ごとに）:
+    - 公演：<組> <日>日目 <枠>
+    - 現在の状況：満席/緊急/警告/正常
+    - 残り：<空席>/<総席> 席
+    - 最終更新：<日時>
+
+```mermaid
+sequenceDiagram
+  participant D as Dashboard
+  participant A as GasAPI(JSONP)
+  participant G as GAS
+  Note over D: 初回取得
+  D->>A: getDetailedCapacityAnalysis (JSONP,∞待機)
+  A->>G: doGet(func=...)
+  G-->>A: analysis
+  A-->>D: analysis
+  D->>D: UI更新（既存カード更新/保持）
+  D->>D: 異常検出→即時送信（初回）
+  Note over D: 以降15秒ごとBG更新
+  loop 15s
+    D->>A: analysis 取得（BG）
+    A-->>D: 結果 or フォールバック(getFullCapacityTimeslots)
+    D->>D: 署名比較→5分経過かつ変化ありなら送信
+  end
+```
+
+### URLローテーション（ダッシュボード連携）
+- ダッシュボード上に接続先GASの現在URL/インデックス/最終ローテーション時刻を表示。
+- 手動操作:
+  - 更新: 情報の再読み込み。
+  - ランダム切替: 現在と異なるURLへ強制切替。
+- 自動操作:
+  - 10分ごとに自動でランダム切替（現在とは必ず異なるURL）。
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant D as Dashboard
+  participant API as GasAPI
+  U->>D: 画面表示
+  D->>API: getUrlManagerInfo
+  API-->>D: {index,total,url,lastRotation}
+  Note over D: 10分ごとに selectRandomUrl()
+  loop 10min
+    D->>API: selectRandomUrl
+    API-->>D: 新URL情報
+  end
+```
+
+### 通信方式（CORS回避・タイムアウト設計）
+- CORS回避のため、重いAPIは JSONP をデフォルト使用。
+- JSONPタイムアウトは可変:
+  - 通常: 20s
+  - 大量集計/通知: 無限待機（`timeoutMs: null`）
+- POST失敗時は JSONP へ自動フォールバック。
+
+
 ---
 
 ## 🧪 DEMOモード
