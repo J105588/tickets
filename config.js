@@ -2,7 +2,7 @@
 // 複数のAPI URL（使用数上限回避のため分散）
 const GAS_API_URLS = [
   //jxjin2010@gmail.com
-  "https://script.google.com/macros/s/AKfycbydNgWEK4UOnJKO5yuywRqFMBAM7SZ7aejwYEtXHWGPNVm8OV-J4tJan4EyHyyaqJS2/exec"
+  "https://script.google.com/macros/s/AKfycbyTiYdNCQfNUtA7OHAEZ4SgTRIA_tExzFCJpSoWvhEI15t5vSJglN6boA7_0UM8nkdR/exec"
   //jxjin.ig.school@gmail.com
   //"https://script.google.com/macros/s/AKfycbzNCNFL54482qdTTwT4i9X_dnVCIKirZ3zpsuuS2UwwxcGA8wkcjDuhJP5Q_q4Hbvsu/exec"
 ];
@@ -12,6 +12,13 @@ const LOG_SPREADSHEET_ID = '1ZGQ5BTNW_pTDuMvbZgla2B_soisdvtCM2UrnVi_L-5c'; // �
 
 // ログ記録用シート名
 const LOG_SHEET_NAME = 'OPERATION_LOGS'; // ログを記録するシート名
+
+// 満席通知用メールアドレス（ハードコーディング）
+const FULL_CAPACITY_NOTIFICATION_EMAILS = [
+  'jxjin2010@gmail.com',
+  'jxjin.ig.school@gmail.com',
+  'nzn.engeki5@gmail.com'
+];
 
 // URL選択とローテーション管理
 class APIUrlManager {

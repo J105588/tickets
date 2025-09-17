@@ -802,7 +802,10 @@ function showFullCapacitySettings() {
   
   // 現在の設定を読み込み
   const settings = fullCapacityMonitor.getSettings();
-  document.getElementById('notification-email').value = settings.email || '';
+  const emailsDisplay = document.getElementById('notification-emails-display');
+  if (emailsDisplay) {
+    emailsDisplay.textContent = settings.emails ? settings.emails.join('\n') : '設定されていません';
+  }
   document.getElementById('notification-enabled').checked = settings.enabled;
   
   // 監視間隔を設定
@@ -827,17 +830,11 @@ function closeFullCapacitySettings() {
 
 // 満席通知設定を保存
 async function saveFullCapacitySettings() {
-  const email = document.getElementById('notification-email').value.trim();
   const enabled = document.getElementById('notification-enabled').checked;
   const interval = parseInt(document.getElementById('check-interval').value);
   
-  if (enabled && !email) {
-    alert('通知を有効にする場合は、メールアドレスを入力してください。');
-    return;
-  }
-  
   try {
-    const success = await fullCapacityMonitor.updateNotificationSettings(email, enabled);
+    const success = await fullCapacityMonitor.updateNotificationSettings(enabled);
     
     if (success) {
       // 監視間隔を更新
@@ -862,45 +859,41 @@ async function saveFullCapacitySettings() {
 }
 
 // テスト通知を送信
-function testFullCapacityNotification() {
-  const email = document.getElementById('notification-email').value.trim();
-  
-  if (!email) {
-    alert('テスト通知を送信するには、メールアドレスを入力してください。');
-    return;
-  }
-  
-  // テスト用の満席データ
-  const testData = [{
-    group: 'テスト演劇',
-    day: '1',
-    timeslot: 'A'
-  }];
-  
-  // ブラウザ通知をテスト
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('満席通知テスト', {
-      body: 'テスト演劇 1日目 A が満席になりました',
-      icon: '/favicon.ico'
-    });
-  }
-  
-  // メール通知をテスト
-  GasAPI._callApi('sendFullCapacityEmail', [{
-    email: email,
-    fullTimeslots: testData,
-    timestamp: new Date().toISOString(),
-    isTest: true
-  }]).then(response => {
+async function testFullCapacityNotification() {
+  try {
+    // ハードコーディングされたメールアドレスを使用
+    const hardcodedEmails = [
+      'admin@example.com',
+      'manager@example.com',
+      'staff@example.com'
+    ];
+    
+    // テスト用の満席データを作成
+    const testFullTimeslots = [{
+      group: 'テスト公演',
+      day: '1',
+      timeslot: 'A',
+      totalSeats: 50,
+      occupiedSeats: 50,
+      emptySeats: 0
+    }];
+
+    const response = await GasAPI._callApi('sendFullCapacityEmail', [{
+      emails: hardcodedEmails,
+      fullTimeslots: testFullTimeslots,
+      timestamp: new Date().toISOString(),
+      isTest: true
+    }]);
+
     if (response && response.success) {
-      alert('テスト通知を送信しました。');
+      alert(`テスト通知を送信しました。\n成功: ${response.successCount}件\n失敗: ${response.failureCount}件`);
     } else {
       alert('テスト通知の送信に失敗しました: ' + (response?.message || 'Unknown error'));
     }
-  }).catch(error => {
+  } catch (error) {
     console.error('テスト通知エラー:', error);
-    alert('テスト通知の送信中にエラーが発生しました: ' + error.message);
-  });
+    alert('テスト通知中にエラーが発生しました: ' + error.message);
+  }
 }
 
 // 手動で満席チェック

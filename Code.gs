@@ -1838,3 +1838,266 @@ function getFullTimeslots() {
     return { success: false, message: e.message };
   }
 }
+
+/**
+ * すべての公演のスプレッドシートに対して満席チェックを実行（最適化版）
+ * 返却: { success: true, fullTimeslots: [{ group, day, timeslot, totalSeats, occupiedSeats, emptySeats }] }
+ */
+function getFullCapacityTimeslots() {
+  try {
+    const result = [];
+    const allTimeslots = [];
+    const keys = Object.keys(SEAT_SHEET_IDS || {});
+    
+    Logger.log(`満席チェック開始: ${keys.length}個の公演をチェック`);
+    
+    for (const key of keys) {
+      try {
+        // キー形式: "{group}-{day}-{timeslot}" を想定
+        const parts = key.split('-');
+        if (parts.length < 3) continue;
+        
+        const group = parts[0];
+        const day = parts[1];
+        const timeslot = parts[2];
+        
+        const timeslotInfo = {
+          group: group,
+          day: day,
+          timeslot: timeslot,
+          totalSeats: 0,
+          occupiedSeats: 0,
+          emptySeats: 0,
+          isFull: false,
+          lastChecked: new Date()
+        };
+        
+        try {
+          const sheet = getSheet(group, day, timeslot, 'SEAT');
+          if (!sheet) {
+            timeslotInfo.error = 'シートが見つかりません';
+            allTimeslots.push(timeslotInfo);
+            continue;
+          }
+          
+          const lastRow = sheet.getLastRow();
+          if (lastRow <= 1) {
+            timeslotInfo.error = 'データがありません';
+            allTimeslots.push(timeslotInfo);
+            continue;
+          }
+          
+          // 最適化: 必要な列のみ取得（A, B, C列）
+          const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+          
+          for (let i = 0; i < data.length; i++) {
+            const rowLabel = data[i][0];
+            const colLabel = data[i][1];
+            const status = (data[i][2] || '').toString().trim();
+            
+            if (!rowLabel || !colLabel) continue;
+            
+            const seatId = String(rowLabel) + String(colLabel);
+            if (!isValidSeatId(seatId)) continue;
+            
+            timeslotInfo.totalSeats++;
+            
+            if (status === '空' || status === '') {
+              timeslotInfo.emptySeats++;
+            } else {
+              timeslotInfo.occupiedSeats++;
+            }
+          }
+          
+          // 満席判定
+          timeslotInfo.isFull = timeslotInfo.emptySeats === 0 && timeslotInfo.totalSeats > 0;
+          
+          if (timeslotInfo.isFull) {
+            result.push(timeslotInfo);
+            Logger.log(`満席検知: ${group} ${day}日目 ${timeslot} (${timeslotInfo.occupiedSeats}/${timeslotInfo.totalSeats}席)`);
+          }
+          
+          allTimeslots.push(timeslotInfo);
+          
+        } catch (innerError) {
+          Logger.log(`満席チェックエラー (${group}-${day}-${timeslot}): ${innerError.message}`);
+          timeslotInfo.error = innerError.message;
+          allTimeslots.push(timeslotInfo);
+        }
+        
+      } catch (outerError) {
+        Logger.log(`公演キー処理エラー (${key}): ${outerError.message}`);
+      }
+    }
+    
+    Logger.log(`満席チェック完了: ${result.length}個の満席公演を検知`);
+    
+    return { 
+      success: true, 
+      fullTimeslots: result,
+      allTimeslots: allTimeslots,
+      summary: {
+        totalChecked: allTimeslots.length,
+        fullCapacity: result.length,
+        totalSeats: allTimeslots.reduce((sum, t) => sum + t.totalSeats, 0),
+        totalOccupied: allTimeslots.reduce((sum, t) => sum + t.occupiedSeats, 0),
+        totalEmpty: allTimeslots.reduce((sum, t) => sum + t.emptySeats, 0)
+      }
+    };
+    
+  } catch (e) {
+    Logger.log('getFullCapacityTimeslots failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 満席通知設定を保存（ハードコーディング版）
+ */
+function setFullCapacityNotification(enabled) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    
+    // ハードコーディングされたメールアドレスを使用
+    const hardcodedEmails = [
+      'admin@example.com',
+      'manager@example.com', 
+      'staff@example.com'
+    ];
+    
+    // 通知の有効/無効のみを保存
+    props.setProperty('FULL_CAPACITY_NOTIFICATION_ENABLED', enabled.toString());
+    props.setProperty('FULL_CAPACITY_NOTIFICATION_UPDATED', new Date().toISOString());
+    
+    Logger.log(`満席通知設定更新: enabled=${enabled}, emails=${hardcodedEmails.join(', ')}`);
+    
+    return { success: true, message: '設定を保存しました' };
+    
+  } catch (e) {
+    Logger.log('setFullCapacityNotification failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 満席通知設定を取得（ハードコーディング版）
+ */
+function getFullCapacityNotificationSettings() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    
+    // ハードコーディングされたメールアドレス
+    const hardcodedEmails = [
+      'admin@example.com',
+      'manager@example.com',
+      'staff@example.com'
+    ];
+    
+    const enabled = props.getProperty('FULL_CAPACITY_NOTIFICATION_ENABLED') === 'true';
+    const updated = props.getProperty('FULL_CAPACITY_NOTIFICATION_UPDATED') || null;
+    
+    return { 
+      success: true, 
+      emails: hardcodedEmails,
+      enabled: enabled,
+      updated: updated
+    };
+    
+  } catch (e) {
+    Logger.log('getFullCapacityNotificationSettings failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 満席通知メールを送信（複数アドレス対応版）
+ */
+function sendFullCapacityEmail(emailData) {
+  try {
+    const { emails, fullTimeslots, timestamp, isTest = false } = emailData;
+    
+    // 複数アドレス対応：単一アドレスまたは配列
+    const emailList = Array.isArray(emails) ? emails : [emails];
+    
+    if (!emailList.length || !emailList.some(email => email && email.includes('@'))) {
+      return { success: false, message: '有効なメールアドレスが指定されていません' };
+    }
+    
+    if (!Array.isArray(fullTimeslots) || fullTimeslots.length === 0) {
+      return { success: false, message: '満席データが指定されていません' };
+    }
+    
+    // メール件名
+    const subject = isTest ? 
+      '[テスト] 満席通知 - 座席管理システム' : 
+      '満席通知 - 座席管理システム';
+    
+    // メール本文
+    let body = isTest ? 
+      'これはテスト通知です。\n\n' : 
+      '以下の公演が満席になりました。\n\n';
+    
+    body += '満席公演一覧:\n';
+    body += '='.repeat(50) + '\n';
+    
+    fullTimeslots.forEach(timeslot => {
+      body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
+      if (timeslot.totalSeats) {
+        body += `  座席数: ${timeslot.totalSeats}席 (満席)\n`;
+      }
+    });
+    
+    body += '\n' + '='.repeat(50) + '\n';
+    body += `通知時刻: ${new Date(timestamp).toLocaleString('ja-JP')}\n`;
+    body += `システム: 座席管理システム\n`;
+    
+    if (isTest) {
+      body += '\n※ これはテスト通知です。実際の満席ではありません。\n';
+    }
+    
+    // 複数アドレスにメール送信
+    const results = [];
+    let successCount = 0;
+    let failureCount = 0;
+    
+    emailList.forEach(email => {
+      if (!email || !email.includes('@')) {
+        results.push({ email, success: false, message: '無効なメールアドレス' });
+        failureCount++;
+        return;
+      }
+      
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: subject,
+          body: body
+        });
+        
+        results.push({ email, success: true, message: '送信成功' });
+        successCount++;
+        
+      } catch (emailError) {
+        Logger.log(`メール送信エラー (${email}): ${emailError.message}`);
+        results.push({ email, success: false, message: emailError.message });
+        failureCount++;
+      }
+    });
+    
+    Logger.log(`満席通知メール送信完了: ${successCount}件成功, ${failureCount}件失敗 (${fullTimeslots.length}件の満席公演)`);
+    
+    return { 
+      success: successCount > 0, 
+      message: `${successCount}件のメールを送信しました${failureCount > 0 ? ` (${failureCount}件失敗)` : ''}`,
+      sentTo: emailList,
+      results: results,
+      timeslotsCount: fullTimeslots.length,
+      successCount: successCount,
+      failureCount: failureCount
+    };
+    
+  } catch (e) {
+    Logger.log('sendFullCapacityEmail failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}

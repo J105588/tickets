@@ -6,7 +6,7 @@ import { DEBUG_MODE, debugLog } from './config.js';
 class FullCapacityMonitor {
   constructor() {
     this.checkInterval = 30000; // 30秒間隔でチェック
-    this.notificationEmail = null;
+    this.notificationEmails = []; // 複数アドレス対応
     this.isEnabled = false;
     this.lastCheckedTimeslots = new Set();
     this.checkTimer = null;
@@ -26,10 +26,10 @@ class FullCapacityMonitor {
     try {
       const response = await GasAPI.getFullCapacityNotificationSettings();
       if (response && response.success) {
-        this.notificationEmail = response.email;
+        this.notificationEmails = response.emails || [];
         this.isEnabled = response.enabled;
         debugLog('[FullCapacityMonitor] 設定読み込み:', {
-          email: this.notificationEmail,
+          emails: this.notificationEmails,
           enabled: this.isEnabled
         });
       }
@@ -142,7 +142,7 @@ class FullCapacityMonitor {
     this.notifyServiceWorker(newFullTimeslots);
     
     // メール通知（設定されている場合）
-    if (this.isEnabled && this.notificationEmail) {
+    if (this.isEnabled && this.notificationEmails.length > 0) {
       await this.sendEmailNotification(newFullTimeslots);
     }
   }
@@ -167,13 +167,13 @@ class FullCapacityMonitor {
     }
   }
 
-  // メール通知
+  // メール通知（複数アドレス対応版）
   async sendEmailNotification(newFullTimeslots) {
     try {
       debugLog('[FullCapacityMonitor] メール通知送信開始');
       
       const emailData = {
-        email: this.notificationEmail,
+        emails: this.notificationEmails,
         fullTimeslots: newFullTimeslots,
         timestamp: new Date().toISOString()
       };
@@ -181,7 +181,11 @@ class FullCapacityMonitor {
       const response = await GasAPI._callApi('sendFullCapacityEmail', [emailData]);
       
       if (response && response.success) {
-        debugLog('[FullCapacityMonitor] メール通知送信成功');
+        debugLog('[FullCapacityMonitor] メール通知送信成功:', {
+          sentTo: response.sentTo,
+          successCount: response.successCount,
+          failureCount: response.failureCount
+        });
       } else {
         console.error('[FullCapacityMonitor] メール通知送信失敗:', response?.message);
       }
@@ -190,20 +194,24 @@ class FullCapacityMonitor {
     }
   }
 
-  // 通知設定を更新
-  async updateNotificationSettings(email, enabled) {
+  // 通知設定を更新（ハードコーディング版）
+  async updateNotificationSettings(enabled) {
     try {
-      const response = await GasAPI.setFullCapacityNotification(email, enabled);
+      const response = await GasAPI.setFullCapacityNotification(enabled);
       
       if (response && response.success) {
-        this.notificationEmail = email;
+        // ハードコーディングされたメールアドレスを使用
+        this.notificationEmails = [
+          'admin@example.com',
+          'manager@example.com',
+          'staff@example.com'
+        ];
         this.isEnabled = enabled;
         
         // 設定をローカルストレージに保存
-        localStorage.setItem('full_capacity_notification_email', email);
         localStorage.setItem('full_capacity_notification_enabled', enabled.toString());
         
-        debugLog('[FullCapacityMonitor] 通知設定更新:', { email, enabled });
+        debugLog('[FullCapacityMonitor] 通知設定更新:', { emails: this.notificationEmails, enabled });
         return true;
       } else {
         console.error('[FullCapacityMonitor] 通知設定更新失敗:', response?.message);
@@ -218,7 +226,7 @@ class FullCapacityMonitor {
   // 現在の設定を取得
   getSettings() {
     return {
-      email: this.notificationEmail,
+      emails: this.notificationEmails,
       enabled: this.isEnabled,
       isRunning: this.isRunning,
       checkInterval: this.checkInterval

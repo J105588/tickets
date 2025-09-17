@@ -181,19 +181,20 @@
         <button class="close-btn" onclick="closeFullCapacitySettings()">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="detail-section">
-          <h4>通知設定</h4>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <label for="notification-email">通知メールアドレス:</label>
-              <input type="email" id="notification-email" placeholder="example@domain.com" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
-            </div>
-            <div class="detail-item">
-              <label for="notification-enabled">通知を有効にする:</label>
-              <input type="checkbox" id="notification-enabled" />
-            </div>
-          </div>
-        </div>
+             <div class="detail-section">
+               <h4>通知設定</h4>
+               <div class="detail-grid">
+                 <div class="detail-item">
+                   <label>通知メールアドレス（固定）:</label>
+                   <div id="notification-emails-display" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: #f8f9fa; font-family: monospace; white-space: pre-line;">読み込み中...</div>
+                   <small style="color: #666; font-size: 12px;">メールアドレスはシステム管理者により設定されています</small>
+                 </div>
+                 <div class="detail-item">
+                   <label for="notification-enabled">通知を有効にする:</label>
+                   <input type="checkbox" id="notification-enabled" />
+                 </div>
+               </div>
+             </div>
         
         <div class="detail-section">
           <h4>監視設定</h4>
