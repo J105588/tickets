@@ -51,6 +51,10 @@ class PushNotificationManager {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'ADMIN_MODE_STATUS') {
                     this.handleAdminModeStatus(event.data.isAdmin);
+                } else if (event.data && event.data.type === 'SUPERADMIN_MODE_STATUS') {
+                    this.handleSuperAdminModeStatus(event.data.isSuperAdmin);
+                } else if (event.data && event.data.type === 'FULL_ALERT_RECEIVED') {
+                    this.handleFullAlertReceived(event.data.notification);
                 }
             });
         }
@@ -71,6 +75,34 @@ class PushNotificationManager {
                 container.style.display = 'none';
             }
         }
+    }
+
+    // 最高管理者モード状態の処理
+    handleSuperAdminModeStatus(isSuperAdmin) {
+        if (isSuperAdmin) {
+            // 最高管理者モードが有効な場合、通知コンテナを表示
+            const container = document.getElementById('push-notification-container');
+            if (container) {
+                container.style.display = 'block';
+            }
+        } else {
+            // 最高管理者モードが無効な場合、通知コンテナを非表示
+            const container = document.getElementById('push-notification-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+    }
+
+    // ブロードキャストされた満席通知を受信
+    handleFullAlertReceived(notificationData) {
+        console.log('[SuperAdmin] ブロードキャスト通知を受信:', notificationData);
+        
+        // ローカルで通知を表示
+        this.showLocalFullAlertNotification(notificationData);
+        
+        // 通知ログを記録
+        this.logNotificationSent('broadcast_full_alert', notificationData);
     }
 
     // UIの初期化
@@ -103,13 +135,11 @@ class PushNotificationManager {
 
     // 管理者モードの監視を開始
     startAdminModeMonitoring() {
-        // 定期的に管理者モードの状態をチェック
-        this.adminModeInterval = setInterval(() => {
-            this.updateNotificationContainerVisibility();
-        }, 1000);
-
         // 管理者モードの変更イベントを監視
         this.setupAdminModeEventListeners();
+        
+        // 初期状態を設定（一度だけ）
+        this.updateNotificationContainerVisibility();
     }
 
     // 管理者モードの変更イベントを監視
@@ -121,82 +151,110 @@ class PushNotificationManager {
             }
         });
 
-        // グローバル変数の変更を監視
+        // グローバル変数の変更を監視（iOS向けに最適化）
         let lastAdminState = window.isSuperAdmin;
-        setInterval(() => {
-            if (window.isSuperAdmin !== lastAdminState) {
-                lastAdminState = window.isSuperAdmin;
+        let lastLocalStorageState = localStorage.getItem('isSuperAdmin');
+        
+        // より長い間隔でチェック（iOSでの点滅を防ぐ）
+        this.globalVarInterval = setInterval(() => {
+            const currentAdminState = window.isSuperAdmin;
+            const currentLocalStorageState = localStorage.getItem('isSuperAdmin');
+            
+            if (currentAdminState !== lastAdminState || currentLocalStorageState !== lastLocalStorageState) {
+                lastAdminState = currentAdminState;
+                lastLocalStorageState = currentLocalStorageState;
                 this.updateNotificationContainerVisibility();
             }
-        }, 500);
+        }, 2000); // 2秒間隔に変更
     }
 
     // 通知コンテナの表示/非表示を更新
     updateNotificationContainerVisibility() {
         const container = document.getElementById('push-notification-container');
         if (!container) {
-            console.log('[Admin Check] 通知コンテナが見つかりません');
+            console.log('[SuperAdmin Check] 通知コンテナが見つかりません');
             return;
         }
 
-        // 管理者モードかどうかをチェック
-        const isAdminMode = this.checkAdminMode();
+        // 最高管理者モードかどうかをチェック
+        const isSuperAdminMode = this.checkSuperAdminMode();
         
-        console.log('[Admin Check] 通知コンテナの表示状態を更新:', {
-            isAdminMode: isAdminMode,
-            currentDisplay: container.style.display
+        // 現在の表示状態を確認
+        const isCurrentlyVisible = container.classList.contains('show') && 
+                                  container.style.display === 'flex' && 
+                                  container.style.visibility === 'visible';
+        
+        // 状態が変わらない場合は処理をスキップ（iOSでの点滅を防ぐ）
+        if (isSuperAdminMode === isCurrentlyVisible) {
+            return;
+        }
+        
+        console.log('[SuperAdmin Check] 通知コンテナの表示状態を更新:', {
+            isSuperAdminMode: isSuperAdminMode,
+            currentDisplay: container.style.display,
+            isCurrentlyVisible: isCurrentlyVisible
         });
         
-        if (isAdminMode) {
+        if (isSuperAdminMode) {
+            // 複数の方法で確実に表示
             container.classList.remove('hide');
             container.classList.add('show');
-            console.log('[Admin Check] 通知コンテナを表示しました');
+            container.style.display = 'flex';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+            container.style.pointerEvents = 'auto';
+            console.log('[SuperAdmin Check] 通知コンテナを表示しました');
         } else {
+            // 複数の方法で確実に非表示
             container.classList.remove('show');
             container.classList.add('hide');
-            console.log('[Admin Check] 通知コンテナを非表示にしました');
+            container.style.display = 'none';
+            container.style.visibility = 'hidden';
+            container.style.opacity = '0';
+            container.style.pointerEvents = 'none';
+            console.log('[SuperAdmin Check] 通知コンテナを非表示にしました');
         }
     }
 
-    // 管理者モードかどうかをチェック
-    checkAdminMode() {
-        // 複数の方法で管理者モードをチェック
+    // 最高管理者モードかどうかをチェック
+    checkSuperAdminMode() {
+        // 複数の方法で最高管理者モードをチェック
         if (typeof window !== 'undefined') {
             // 1. グローバル変数でチェック
             if (window.isSuperAdmin === true) {
-                console.log('[Admin Check] グローバル変数で管理者モードを検出');
+                console.log('[SuperAdmin Check] グローバル変数で最高管理者モードを検出');
                 return true;
             }
 
             // 2. localStorageでチェック
             if (localStorage.getItem('isSuperAdmin') === 'true') {
-                console.log('[Admin Check] localStorageで管理者モードを検出');
+                console.log('[SuperAdmin Check] localStorageで最高管理者モードを検出');
                 return true;
             }
 
             // 3. URLパラメータでチェック
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('superadmin') === 'true') {
-                console.log('[Admin Check] URLパラメータで管理者モードを検出');
+                console.log('[SuperAdmin Check] URLパラメータで最高管理者モードを検出');
                 return true;
             }
 
             // 4. Service Workerの管理者クライアントIDでチェック
             if (this.swRegistration && this.swRegistration.active) {
-                // Service Workerに管理者モードの確認を送信
+                // Service Workerに最高管理者モードの確認を送信
                 this.swRegistration.active.postMessage({
-                    type: 'CHECK_ADMIN_MODE'
+                    type: 'CHECK_SUPERADMIN_MODE'
                 });
             }
 
-            // 5. デバッグ用: コンソールから管理者モードを有効にできる
+            // 5. デバッグ用: コンソールから最高管理者モードを有効にできる
             if (window.enableSuperAdminMode) {
-                console.log('[Admin Check] デバッグ用の管理者モードが有効です');
+                console.log('[SuperAdmin Check] デバッグ用の最高管理者モードが有効です');
                 return true;
             }
 
             // デバッグ情報を出力
-            console.log('[Admin Check] 管理者モード検出結果:', {
+            console.log('[SuperAdmin Check] 最高管理者モード検出結果:', {
                 windowIsSuperAdmin: window.isSuperAdmin,
                 localStorageIsSuperAdmin: localStorage.getItem('isSuperAdmin'),
                 urlSuperadmin: urlParams.get('superadmin'),
@@ -205,7 +263,7 @@ class PushNotificationManager {
             });
         }
 
-        console.log('[Admin Check] 管理者モードではありません');
+        console.log('[SuperAdmin Check] 最高管理者モードではありません');
         return false;
     }
 
@@ -392,14 +450,18 @@ class PushNotificationManager {
         const isStandalone = window.navigator.standalone === true;
 
         if (isIOS) {
+            console.log('[iOS] デバイス検出:', { isIOS, isSafari, isStandalone });
+            
             // スタンドアロンモード（ホーム画面から起動）の場合
             if (isStandalone) {
+                console.log('[iOS] スタンドアロンモードでWeb Push APIを試行');
                 // 通常のWeb Push APIを試行
                 const permissionGranted = await this.requestNotificationPermission();
                 if (permissionGranted) {
                     return await this.subscribe();
                 }
             } else {
+                console.log('[iOS] ブラウザモードで代替通知方式を使用');
                 // ブラウザモードの場合、代替通知方式を使用
                 return await this.setupIOSAlternativeNotifications();
             }
@@ -436,6 +498,12 @@ class PushNotificationManager {
                     right: 20px;
                     z-index: 10000;
                     max-width: 350px;
+                    /* iOS最適化 */
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                    -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+                    will-change: transform, opacity;
                 }
                 .ios-notification {
                     background: white;
@@ -446,6 +514,17 @@ class PushNotificationManager {
                     border-left: 4px solid #007bff;
                     animation: slideInRight 0.3s ease-out;
                     position: relative;
+                    /* iOS最適化 */
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                    -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+                    will-change: transform, opacity;
+                    /* iOS向けのタッチ最適化 */
+                    -webkit-tap-highlight-color: transparent;
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    user-select: none;
                 }
                 .ios-notification-header {
                     display: flex;
@@ -608,8 +687,14 @@ class PushNotificationManager {
         return localStorage.getItem('userId') || 'anonymous';
     }
 
-    // 満席通知の自動配信を開始
+    // 満席通知の自動配信を開始（最高管理者モードでのみ）
     startFullAlertMonitoring() {
+        // 最高管理者モードでない場合は監視を開始しない
+        if (!this.checkSuperAdminMode()) {
+            console.log('[SuperAdmin] 最高管理者モードではないため、満席通知監視を開始しません');
+            return;
+        }
+
         // 既存の監視を停止
         if (this.fullAlertInterval) {
             clearInterval(this.fullAlertInterval);
@@ -618,13 +703,20 @@ class PushNotificationManager {
         // 30秒ごとに満席状況をチェック
         this.fullAlertInterval = setInterval(async () => {
             try {
+                // 最高管理者モードの再確認
+                if (!this.checkSuperAdminMode()) {
+                    console.log('[SuperAdmin] 最高管理者モードが無効になったため、監視を停止します');
+                    this.stopFullAlertMonitoring();
+                    return;
+                }
+                
                 await this.checkFullAlertStatus();
             } catch (error) {
                 console.error('満席状況のチェックに失敗:', error);
             }
         }, 30000);
 
-        console.log('満席通知の自動監視を開始しました');
+        console.log('[SuperAdmin] 満席通知の自動監視を開始しました');
     }
 
     // 満席状況をチェック
@@ -674,8 +766,14 @@ class PushNotificationManager {
         }, delay);
     }
 
-    // 満席通知を送信
+    // 満席通知を送信（最高管理者モードでのみ）
     async sendFullAlertNotification(alertData) {
+        // 最高管理者モードでない場合は送信しない
+        if (!this.checkSuperAdminMode()) {
+            console.log('[SuperAdmin] 最高管理者モードではないため、満席通知を送信しません');
+            return;
+        }
+
         try {
             const notificationData = {
                 type: 'full_alert',
@@ -687,7 +785,9 @@ class PushNotificationManager {
                 timestamp: Date.now()
             };
 
-            // Service Workerに満席通知を送信
+            console.log('[SuperAdmin] 満席通知を送信中:', alertData);
+
+            // 1. Service Workerに満席通知を送信（PWA通知）
             if (this.swRegistration && this.swRegistration.active) {
                 this.swRegistration.active.postMessage({
                     type: 'FULL_ALERT',
@@ -695,18 +795,52 @@ class PushNotificationManager {
                     day: alertData.day,
                     timeslot: alertData.timeslot
                 });
-                console.log('満席通知を送信しました:', alertData);
+                console.log('[SuperAdmin] Service Workerに満席通知を送信しました');
             }
 
-            // ローカルでも通知を表示（フォールバック）
+            // 2. サーバーに満席通知を送信（全ユーザーに配信）
+            if (typeof GasAPI !== 'undefined') {
+                try {
+                    const response = await GasAPI.callFunction('sendFullAlertNotification', {
+                        group: alertData.group,
+                        day: alertData.day,
+                        timeslot: alertData.timeslot,
+                        adminId: this.getUserId()
+                    });
+                    console.log('[SuperAdmin] サーバーに満席通知を送信しました:', response);
+                } catch (serverError) {
+                    console.warn('[SuperAdmin] サーバーへの送信は失敗しましたが、ローカル通知は送信されます:', serverError);
+                }
+            }
+
+            // 3. ローカルでも通知を表示（フォールバック）
             this.showLocalFullAlertNotification(notificationData);
+
+            // 4. 全クライアントにブロードキャスト
+            this.broadcastToAllClients(notificationData);
 
             // 通知の送信ログを記録
             this.logNotificationSent('full_alert', alertData);
 
         } catch (error) {
-            console.error('満席通知の送信に失敗:', error);
+            console.error('[SuperAdmin] 満席通知の送信に失敗:', error);
             this.logNotificationError('full_alert', alertData, error);
+        }
+    }
+
+    // 全クライアントにブロードキャスト
+    broadcastToAllClients(notificationData) {
+        try {
+            // Service Workerにブロードキャストを送信
+            if (this.swRegistration && this.swRegistration.active) {
+                this.swRegistration.active.postMessage({
+                    type: 'BROADCAST_FULL_ALERT',
+                    notification: JSON.stringify(notificationData)
+                });
+                console.log('[SuperAdmin] 全クライアントにブロードキャストしました');
+            }
+        } catch (error) {
+            console.error('[SuperAdmin] ブロードキャストに失敗:', error);
         }
     }
 
@@ -1112,11 +1246,66 @@ window.checkAdminStatus = function() {
     return pushNotificationManager.checkAdminMode();
 };
 
+window.checkSuperAdminStatus = function() {
+    console.log('現在の最高管理者モード状態:', pushNotificationManager.checkSuperAdminMode());
+    return pushNotificationManager.checkSuperAdminMode();
+};
+
 window.forceShowNotification = function() {
     const container = document.getElementById('push-notification-container');
     if (container) {
         container.classList.remove('hide');
         container.classList.add('show');
+        container.style.display = 'flex';
+        container.style.visibility = 'visible';
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
         console.log('強制的に通知コンテナを表示しました');
+        
+        // iOS向けの最適化を確認
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            console.log('[iOS] 通知コンテナの表示状態:', {
+                computedStyle: window.getComputedStyle(container).display,
+                classList: Array.from(container.classList),
+                transform: window.getComputedStyle(container).transform
+            });
+        }
+    }
+};
+
+window.debugNotificationContainer = function() {
+    const container = document.getElementById('push-notification-container');
+    if (container) {
+        console.log('通知コンテナの詳細状態:', {
+            classList: Array.from(container.classList),
+            style: {
+                display: container.style.display,
+                visibility: container.style.visibility,
+                opacity: container.style.opacity,
+                pointerEvents: container.style.pointerEvents
+            },
+            computedStyle: {
+                display: window.getComputedStyle(container).display,
+                visibility: window.getComputedStyle(container).visibility,
+                opacity: window.getComputedStyle(container).opacity,
+                transform: window.getComputedStyle(container).transform
+            },
+            isVisible: window.getComputedStyle(container).display !== 'none',
+            adminMode: pushNotificationManager.checkAdminMode()
+        });
+    }
+};
+
+window.stopAdminModeMonitoring = function() {
+    if (pushNotificationManager.adminModeInterval) {
+        clearInterval(pushNotificationManager.adminModeInterval);
+        pushNotificationManager.adminModeInterval = null;
+        console.log('管理者モード監視を停止しました');
+    }
+    if (pushNotificationManager.globalVarInterval) {
+        clearInterval(pushNotificationManager.globalVarInterval);
+        pushNotificationManager.globalVarInterval = null;
+        console.log('グローバル変数監視を停止しました');
     }
 };

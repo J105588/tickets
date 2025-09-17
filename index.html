@@ -40,18 +40,56 @@
       flex-direction: column;
       gap: 10px;
       align-items: flex-end;
+      /* iOS最適化 */
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      /* 点滅防止 */
+      transition: none;
+      -webkit-transition: none;
     }
 
     .push-notification-container.show {
       display: flex !important;
       visibility: visible !important;
       opacity: 1 !important;
+      /* iOS最適化 */
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
     }
 
     .push-notification-container.hide {
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
+      /* iOS最適化 */
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
+    }
+
+    /* iOS向けの追加スタイル */
+    @supports (-webkit-touch-callout: none) {
+      .push-notification-container {
+        /* iOS Safari専用の最適化 */
+        -webkit-overflow-scrolling: touch;
+        will-change: transform, opacity;
+      }
+      
+      .push-btn {
+        /* iOS向けのタッチ最適化 */
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        /* タッチ時の視覚的フィードバック */
+        transition: all 0.2s ease;
+      }
+      
+      .push-btn:active {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
     }
 
     .push-btn {

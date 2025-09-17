@@ -284,6 +284,20 @@ self.addEventListener('message', (event) => {
 			});
 		}
 	}
+
+	// 最高管理者モードの確認
+	if (event.data && event.data.type === 'CHECK_SUPERADMIN_MODE') {
+		const clientId = (event.source && event.source.id) || (event.clientId) || null;
+		const isSuperAdmin = clientId && SUPERADMIN_CLIENT_IDS.has(clientId);
+		
+		// クライアントに最高管理者モードの状態を返信
+		if (event.source) {
+			event.source.postMessage({
+				type: 'SUPERADMIN_MODE_STATUS',
+				isSuperAdmin: isSuperAdmin
+			});
+		}
+	}
 });
 
 // 満席通知を送信
