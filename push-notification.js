@@ -134,15 +134,25 @@ class PushNotificationManager {
     // 通知コンテナの表示/非表示を更新
     updateNotificationContainerVisibility() {
         const container = document.getElementById('push-notification-container');
-        if (!container) return;
+        if (!container) {
+            console.log('[Admin Check] 通知コンテナが見つかりません');
+            return;
+        }
 
         // 管理者モードかどうかをチェック
         const isAdminMode = this.checkAdminMode();
         
+        console.log('[Admin Check] 通知コンテナの表示状態を更新:', {
+            isAdminMode: isAdminMode,
+            currentDisplay: container.style.display
+        });
+        
         if (isAdminMode) {
             container.style.display = 'block';
+            console.log('[Admin Check] 通知コンテナを表示しました');
         } else {
             container.style.display = 'none';
+            console.log('[Admin Check] 通知コンテナを非表示にしました');
         }
     }
 
@@ -152,17 +162,20 @@ class PushNotificationManager {
         if (typeof window !== 'undefined') {
             // 1. グローバル変数でチェック
             if (window.isSuperAdmin === true) {
+                console.log('[Admin Check] グローバル変数で管理者モードを検出');
                 return true;
             }
 
             // 2. localStorageでチェック
             if (localStorage.getItem('isSuperAdmin') === 'true') {
+                console.log('[Admin Check] localStorageで管理者モードを検出');
                 return true;
             }
 
             // 3. URLパラメータでチェック
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('superadmin') === 'true') {
+                console.log('[Admin Check] URLパラメータで管理者モードを検出');
                 return true;
             }
 
@@ -173,8 +186,24 @@ class PushNotificationManager {
                     type: 'CHECK_ADMIN_MODE'
                 });
             }
+
+            // 5. デバッグ用: コンソールから管理者モードを有効にできる
+            if (window.enableSuperAdminMode) {
+                console.log('[Admin Check] デバッグ用の管理者モードが有効です');
+                return true;
+            }
+
+            // デバッグ情報を出力
+            console.log('[Admin Check] 管理者モード検出結果:', {
+                windowIsSuperAdmin: window.isSuperAdmin,
+                localStorageIsSuperAdmin: localStorage.getItem('isSuperAdmin'),
+                urlSuperadmin: urlParams.get('superadmin'),
+                currentUrl: window.location.href,
+                enableSuperAdminMode: window.enableSuperAdminMode
+            });
         }
 
+        console.log('[Admin Check] 管理者モードではありません');
         return false;
     }
 
@@ -1050,3 +1079,23 @@ const pushNotificationManager = new PushNotificationManager();
 
 // グローバルに公開
 window.pushNotificationManager = pushNotificationManager;
+
+// デバッグ用の関数を公開
+window.enableSuperAdminMode = function() {
+    console.log('管理者モードを有効にしました');
+    window.isSuperAdmin = true;
+    localStorage.setItem('isSuperAdmin', 'true');
+    pushNotificationManager.updateNotificationContainerVisibility();
+};
+
+window.disableSuperAdminMode = function() {
+    console.log('管理者モードを無効にしました');
+    window.isSuperAdmin = false;
+    localStorage.removeItem('isSuperAdmin');
+    pushNotificationManager.updateNotificationContainerVisibility();
+};
+
+window.checkAdminStatus = function() {
+    console.log('現在の管理者モード状態:', pushNotificationManager.checkAdminMode());
+    return pushNotificationManager.checkAdminMode();
+};
