@@ -641,6 +641,10 @@
                 this.updateInterval = null;
                 this.notificationHistory = [];
                 this.currentData = null;
+                this.isRefreshing = false;
+                this.isSendingEmail = false;
+                this.nextEmailCheckAt = 0;
+                this.latestTimeslotMap = new Map();
                 
                 this.initializeElements();
                 this.bindEvents();
@@ -658,6 +662,7 @@
                     manualCheck: document.getElementById('manual-check'),
                     updateSettings: document.getElementById('update-settings'),
                     clearHistory: document.getElementById('clear-history'),
+                    testNotification: document.getElementById('test-notification'),
                     timeslotsContainer: document.getElementById('timeslots-container'),
                     notificationList: document.getElementById('notification-list'),
                     errorContainer: document.getElementById('error-container'),
@@ -693,15 +698,89 @@
                     const response = await GasAPI.getDetailedCapacityAnalysis();
                     if (response.success) {
                         this.currentData = response.analysis;
+                        this.mergeTimeslots(this.currentData.timeslots || []);
+                        this.notifyNewClasses(this.currentData);
                         this.updateDashboard();
                         this.updateQuickButtonStates();
                         this.updateStatusIndicator();
+                        // 初回取得直後は即時判定・送信、その後5分間隔
+                        this.nextEmailCheckAt = Date.now();
+                        this.maybeTriggerScheduledEmail();
                     } else {
-                        this.showError('データの読み込みに失敗しました: ' + response.message);
+                        // フォールバック: 簡易データで表示を継続
+                        await this.loadWithFallback('データの読み込みに失敗しました: ' + (response.message || '')); 
                     }
                 } catch (error) {
-                    this.showError('データの読み込み中にエラーが発生しました: ' + error.message);
+                    // フォールバック: タイムアウト/ネットワーク例外時
+                    await this.loadWithFallback('データの読み込み中にエラーが発生しました: ' + error.message);
                 }
+            }
+
+            async loadWithFallback(baseMessage) {
+                try {
+                    const fallback = await GasAPI.getFullCapacityTimeslots();
+                    if (fallback && fallback.success !== false) {
+                        this.currentData = this.buildMinimalAnalysisFromFullCapacity(fallback);
+                        this.mergeTimeslots(this.currentData.timeslots || []);
+                        this.notifyNewClasses(this.currentData);
+                        this.updateDashboard();
+                        this.updateQuickButtonStates();
+                        this.updateStatusIndicator();
+                        this.showSuccess((baseMessage ? baseMessage + ' ' : '') + '簡易表示に切り替えました');
+                        // 初回フォールバックでも即時送信判定
+                        this.nextEmailCheckAt = Date.now();
+                        this.maybeTriggerScheduledEmail();
+                        return;
+                    }
+                    this.showError(baseMessage || 'データ取得に失敗しました');
+                } catch (e) {
+                    this.showError((baseMessage ? baseMessage + ' ' : '') + 'フォールバックにも失敗しました: ' + e.message);
+                }
+            }
+
+            buildMinimalAnalysisFromFullCapacity(fallbackResponse) {
+                // 期待する形に正規化
+                const timeslots = [];
+                const list = fallbackResponse.timeslots || fallbackResponse.data || fallbackResponse.result || [];
+                const now = new Date();
+                for (const item of list) {
+                    // 想定されるフィールド名に幅を持たせる
+                    const group = item.group || item.g || item.grp || '不明';
+                    const day = (item.day || item.d || 1).toString();
+                    const timeslot = item.timeslot || item.slot || item.t || 'A';
+                    const totalSeats = item.totalSeats || item.total || 0;
+                    const emptySeats = item.emptySeats != null ? item.emptySeats : 0;
+                    const occupiedSeats = totalSeats > 0 ? Math.max(0, totalSeats - emptySeats) : (item.occupiedSeats || 0);
+                    timeslots.push({
+                        group,
+                        day,
+                        timeslot,
+                        totalSeats,
+                        occupiedSeats,
+                        emptySeats,
+                        isFull: emptySeats === 0,
+                        capacityLevel: emptySeats === 0 ? 'full' : (emptySeats <= 2 ? 'critical' : (emptySeats <= 5 ? 'warning' : 'normal')),
+                        lastChecked: now
+                    });
+                }
+
+                const summary = {
+                    totalTimeslots: timeslots.length,
+                    fullCapacity: timeslots.filter(t => t.capacityLevel === 'full').length,
+                    criticalCapacity: timeslots.filter(t => t.capacityLevel === 'critical').length,
+                    warningCapacity: timeslots.filter(t => t.capacityLevel === 'warning').length,
+                    normalCapacity: timeslots.filter(t => t.capacityLevel === 'normal').length,
+                    totalSeats: timeslots.reduce((s, t) => s + (t.totalSeats || 0), 0),
+                    totalOccupied: timeslots.reduce((s, t) => s + (t.occupiedSeats || 0), 0),
+                    totalEmpty: timeslots.reduce((s, t) => s + (t.emptySeats || 0), 0)
+                };
+
+                return {
+                    summary,
+                    timeslots,
+                    capacityDistribution: {},
+                    trends: []
+                };
             }
 
             async startMonitoring() {
@@ -885,8 +964,141 @@
                 
                 const interval = parseInt(this.elements.checkInterval.value) * 1000;
                 this.updateInterval = setInterval(() => {
-                    this.loadInitialData();
+                    this.refreshInBackground();
                 }, interval);
+            }
+
+            async refreshInBackground() {
+                if (this.isRefreshing) return;
+                this.isRefreshing = true;
+                try {
+                    const response = await GasAPI.getDetailedCapacityAnalysis();
+                    if (response && response.success) {
+                        this.currentData = response.analysis;
+                        this.mergeTimeslots(this.currentData.timeslots || []);
+                        this.notifyNewClasses(this.currentData);
+                        this.updateDashboard();
+                        this.updateQuickButtonStates();
+                        this.updateStatusIndicator();
+                        this.maybeTriggerScheduledEmail();
+                        return;
+                    }
+                    // fallback silently
+                    const fallback = await GasAPI.getFullCapacityTimeslots();
+                    if (fallback && fallback.success !== false) {
+                        this.currentData = this.buildMinimalAnalysisFromFullCapacity(fallback);
+                        this.mergeTimeslots(this.currentData.timeslots || []);
+                        this.notifyNewClasses(this.currentData);
+                        this.updateDashboard();
+                        this.updateQuickButtonStates();
+                        this.updateStatusIndicator();
+                        this.maybeTriggerScheduledEmail();
+                    }
+                } catch (e) {
+                    // silent failure in background; keep current UI
+                    console.warn('[Background Refresh] failed:', e && e.message ? e.message : e);
+                } finally {
+                    this.isRefreshing = false;
+                }
+            }
+
+            mergeTimeslots(timeslots) {
+                try {
+                    if (!Array.isArray(timeslots)) return;
+                    for (const t of timeslots) {
+                        const id = this.getTimeslotId(t);
+                        const normalized = { ...t };
+                        if (!normalized.lastChecked) normalized.lastChecked = new Date();
+                        this.latestTimeslotMap.set(id, normalized);
+                    }
+                } catch (_) {}
+            }
+
+            getAbnormalTimeslots() {
+                if (!this.currentData || !Array.isArray(this.currentData.timeslots)) return [];
+                return this.currentData.timeslots.filter(t => (t.capacityLevel && t.capacityLevel !== 'normal'));
+            }
+
+            maybeTriggerScheduledEmail() {
+                try {
+                    const now = Date.now();
+                    if (now < this.nextEmailCheckAt) return;
+                    const abnormal = this.getAbnormalTimeslots();
+                    if (abnormal.length === 0) {
+                        // 次回チェックは5分後（通知対象が無くても間隔維持）
+                        this.nextEmailCheckAt = now + 5 * 60 * 1000;
+                        return;
+                    }
+                    // 送信処理を非同期で実行
+                    this.sendAbnormalStatusEmail(abnormal).finally(() => {
+                        this.nextEmailCheckAt = Date.now() + 5 * 60 * 1000;
+                    });
+                } catch (_) {}
+            }
+
+            async sendAbnormalStatusEmail(abnormal) {
+                try {
+                    if (this.isSendingEmail) return;
+                    this.isSendingEmail = true;
+
+                    const notifications = abnormal.map(t => ({
+                        timeslot: {
+                            group: t.group,
+                            day: String(t.day),
+                            timeslot: t.timeslot,
+                            emptySeats: t.emptySeats,
+                            totalSeats: t.totalSeats,
+                            occupiedSeats: t.occupiedSeats,
+                            isFull: t.capacityLevel === 'full',
+                            capacityLevel: t.capacityLevel,
+                            lastChecked: t.lastChecked
+                        },
+                        change: {
+                            type: 'capacity_status',
+                            to: t.capacityLevel
+                        },
+                        priority: (t.capacityLevel === 'full') ? 'high' : (t.capacityLevel === 'critical' ? 'medium' : 'low')
+                    }));
+
+                    const rawStats = (window.enhancedStatusMonitor && window.enhancedStatusMonitor.getStatistics) ? window.enhancedStatusMonitor.getStatistics() : {};
+                    const safeStats = {
+                        totalChecks: Number((rawStats && rawStats.totalChecks) || 0),
+                        totalNotifications: Number((rawStats && rawStats.totalNotifications) || 0),
+                        averageEmptySeats: Number(isFinite(rawStats && rawStats.averageEmptySeats) ? rawStats.averageEmptySeats : 0),
+                        lastCheckTime: (rawStats && rawStats.lastCheckTime) ? rawStats.lastCheckTime : null
+                    };
+                    const sum = this.currentData.summary || {};
+                    const safeSummary = {
+                        totalTimeslots: Number(sum.totalTimeslots || 0),
+                        fullCapacity: Number(sum.fullCapacity || 0),
+                        criticalCapacity: Number(sum.criticalCapacity || 0),
+                        warningCapacity: Number(sum.warningCapacity || 0),
+                        normalCapacity: Number(sum.normalCapacity || 0),
+                        totalSeats: Number(sum.totalSeats || 0),
+                        totalOccupied: Number(sum.totalOccupied || 0),
+                        totalEmpty: Number(sum.totalEmpty || 0)
+                    };
+
+                    const payload = {
+                        notifications,
+                        summary: safeSummary,
+                        statistics: safeStats,
+                        timestamp: new Date().toISOString(),
+                        source: 'monitoring-dashboard'
+                    };
+
+                    console.log(`[Email Trigger] 異常ステータス ${abnormal.length} 件、送信開始`);
+                    const resp = await GasAPI.sendStatusNotificationEmail(payload);
+                    if (resp && resp.success) {
+                        console.log('[Email Trigger] 送信成功');
+                    } else {
+                        console.warn('[Email Trigger] 送信失敗', resp);
+                    }
+                } catch (e) {
+                    console.warn('[Email Trigger] 例外', e && e.message ? e.message : e);
+                } finally {
+                    this.isSendingEmail = false;
+                }
             }
 
             updateDashboard() {
@@ -895,6 +1107,20 @@
                 this.updateStatusIndicators();
                 this.updateStatistics();
                 this.updateTimeslotsGrid();
+            }
+
+            notifyNewClasses(data) {
+                try {
+                    const timeslots = (data && data.timeslots) ? data.timeslots : [];
+                    const groups = Array.from(new Set(timeslots.map(t => t.group))).filter(Boolean);
+                    if (groups.length > 0) {
+                        groups.forEach(g => console.log(`[Class Arrival] 受信: ${g}`));
+                    } else {
+                        console.log('[Class Arrival] 受信データにクラス情報がありません');
+                    }
+                } catch (_) {
+                    // noop
+                }
             }
 
             updateStatusIndicators() {
@@ -923,43 +1149,111 @@
             }
 
             updateTimeslotsGrid() {
-                const timeslots = this.currentData.timeslots;
-                
-                if (timeslots.length === 0) {
-                    this.elements.timeslotsContainer.innerHTML = '<div class="loading">公演データがありません</div>';
+                const timeslots = Array.from(this.latestTimeslotMap.values());
+                if (!Array.isArray(timeslots) || timeslots.length === 0) {
+                    // 初回のみ空表示に切り替え
+                    const existingGrid = this.elements.timeslotsContainer.querySelector('#timeslots-grid');
+                    if (!existingGrid) {
+                        this.elements.timeslotsContainer.innerHTML = '<div class="loading">公演データがありません</div>';
+                    }
                     return;
                 }
-                
-                const grid = timeslots.map(timeslot => this.createTimeslotCard(timeslot)).join('');
-                this.elements.timeslotsContainer.innerHTML = `<div class="timeslots-grid">${grid}</div>`;
+
+                // グリッド要素を確保（無ければ一度だけ作成）
+                let gridEl = this.elements.timeslotsContainer.querySelector('#timeslots-grid');
+                if (!gridEl) {
+                    this.elements.timeslotsContainer.innerHTML = '';
+                    gridEl = document.createElement('div');
+                    gridEl.className = 'timeslots-grid';
+                    gridEl.id = 'timeslots-grid';
+                    this.elements.timeslotsContainer.appendChild(gridEl);
+                }
+
+                const desiredIds = new Set();
+                for (const t of timeslots) {
+                    const id = this.getTimeslotId(t);
+                    desiredIds.add(id);
+                    let card = gridEl.querySelector(`[data-id="${CSS.escape(id)}"]`);
+                    if (card) {
+                        this.updateTimeslotCard(card, t);
+                    } else {
+                        card = this.createTimeslotCardElement(t, id);
+                        gridEl.appendChild(card);
+                    }
+                }
+
+                // 常時表示: 余分なカードは維持（非更新のカードはそのまま）
             }
 
-            createTimeslotCard(timeslot) {
+            getTimeslotId(timeslot) {
+                const group = timeslot.group || '不明';
+                const day = String(timeslot.day || '');
+                const slot = timeslot.timeslot || '';
+                return `${group}|${day}|${slot}`;
+            }
+
+            createTimeslotCardElement(timeslot, id) {
+                const el = document.createElement('div');
+                el.className = 'timeslot-card';
+                el.setAttribute('data-id', id);
+                el.innerHTML = `
+                    <div class="timeslot-header">
+                        <h4 class="timeslot-title"></h4>
+                        <span class="capacity-badge"></span>
+                    </div>
+                    <div class="timeslot-stats">
+                        <div class="stat-item">
+                            <p class="stat-value" data-field="emptySeats"></p>
+                            <p class="stat-label">空席</p>
+                        </div>
+                        <div class="stat-item">
+                            <p class="stat-value" data-field="occupiedSeats"></p>
+                            <p class="stat-label">利用中</p>
+                        </div>
+                    </div>
+                    <div class="timeslot-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <p class="last-updated"></p>
+                `;
+                this.updateTimeslotCard(el, timeslot);
+                return el;
+            }
+
+            updateTimeslotCard(cardEl, timeslot) {
                 const capacityLevel = timeslot.capacityLevel || 'normal';
                 const occupancyRate = timeslot.totalSeats > 0 ? (timeslot.occupiedSeats / timeslot.totalSeats) * 100 : 0;
-                
-                return `
-                    <div class="timeslot-card ${capacityLevel}">
-                        <div class="timeslot-header">
-                            <h4 class="timeslot-title">${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}</h4>
-                            <span class="capacity-badge ${capacityLevel}">${this.getCapacityLevelText(capacityLevel)}</span>
-                        </div>
-                        <div class="timeslot-stats">
-                            <div class="stat-item">
-                                <p class="stat-value">${timeslot.emptySeats}</p>
-                                <p class="stat-label">空席</p>
-                            </div>
-                            <div class="stat-item">
-                                <p class="stat-value">${timeslot.occupiedSeats}</p>
-                                <p class="stat-label">利用中</p>
-                            </div>
-                        </div>
-                        <div class="timeslot-progress">
-                            <div class="progress-bar ${capacityLevel}" style="width: ${occupancyRate}%"></div>
-                        </div>
-                        <p class="last-updated">${new Date(timeslot.lastChecked).toLocaleString('ja-JP')}</p>
-                    </div>
-                `;
+                // ステール判定（更新が遅れているカードを視覚化したい場合は 'stale' クラスを付与）
+                let isStale = false;
+                try {
+                    const last = new Date(timeslot.lastChecked).getTime();
+                    const intervalMs = (parseInt(this.elements.checkInterval.value) || 15) * 1000;
+                    if (Date.now() - last > intervalMs * 2) isStale = true;
+                } catch (_) {}
+                cardEl.className = `timeslot-card ${capacityLevel}${isStale ? ' stale' : ''}`;
+
+                const titleEl = cardEl.querySelector('.timeslot-title');
+                if (titleEl) titleEl.textContent = `${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}`;
+
+                const badgeEl = cardEl.querySelector('.capacity-badge');
+                if (badgeEl) {
+                    badgeEl.className = `capacity-badge ${capacityLevel}`;
+                    badgeEl.textContent = this.getCapacityLevelText(capacityLevel);
+                }
+
+                const emptyEl = cardEl.querySelector('[data-field="emptySeats"]');
+                if (emptyEl) emptyEl.textContent = timeslot.emptySeats;
+                const occEl = cardEl.querySelector('[data-field="occupiedSeats"]');
+                if (occEl) occEl.textContent = timeslot.occupiedSeats;
+
+                const barEl = cardEl.querySelector('.progress-bar');
+                if (barEl) {
+                    barEl.className = `progress-bar ${capacityLevel}`;
+                    barEl.style.width = `${occupancyRate}%`;
+                }
+
+                const timeEl = cardEl.querySelector('.last-updated');
+                if (timeEl) timeEl.textContent = new Date(timeslot.lastChecked).toLocaleString('ja-JP');
             }
 
             getCapacityLevelText(level) {

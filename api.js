@@ -1,5 +1,5 @@
 // api.js
-import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager, FEATURE_FLAGS } from './config.js';
+import { GAS_API_URLS, DEBUG_MODE, debugLog, apiUrlManager, FEATURE_FLAGS, FULL_CAPACITY_NOTIFICATION_EMAILS } from './config.js';
 import audit from './audit-logger.js';
 
 class GasAPI {
@@ -24,7 +24,51 @@ class GasAPI {
     }
     throw lastErr;
   }
-  static _callApi(functionName, params = []) {
+  static _callApiPost(functionName, params = []) {
+    return new Promise(async (resolve) => {
+      try {
+        const urls = Array.isArray(GAS_API_URLS) && GAS_API_URLS.length > 0 ? GAS_API_URLS : [];
+        const currentUrl = apiUrlManager.getCurrentUrl();
+        const candidates = urls.length ? [currentUrl, ...urls.filter(u => u !== currentUrl)] : [currentUrl];
+
+        const formParams = `func=${encodeURIComponent(functionName)}&params=${encodeURIComponent(JSON.stringify(params))}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+        for (let i = 0; i < candidates.length; i++) {
+          const url = candidates[i];
+          try {
+            const resp = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: formParams,
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            debugLog(`API Response (POST): ${functionName}`, data);
+            return resolve(data);
+          } catch (err) {
+            if (i === candidates.length - 1) {
+              // 最後まで失敗 → JSONP にフォールバック
+              debugLog(`API POST failed, falling back to JSONP: ${functionName}`, { error: err && err.message });
+              const jsonp = await this._callApi(functionName, params);
+              return resolve(jsonp);
+            }
+          }
+        }
+      } catch (e) {
+        try {
+          const jsonp = await this._callApi(functionName, params);
+          return resolve(jsonp);
+        } catch (_) {
+          return resolve({ success: false, error: e.message || 'POST 呼び出しに失敗しました' });
+        }
+      }
+    });
+  }
+  static _callApi(functionName, params = [], options = {}) {
     return new Promise((resolve, reject) => {
       try {
         // オフライン時はオフライン同期システムに処理を委譲
@@ -61,7 +105,7 @@ class GasAPI {
         window[callbackName] = (data) => {
           debugLog(`API Response (JSONP): ${functionName}`, data);
           try {
-            try { clearTimeout(timeoutId); } catch (e) {}
+            try { if (timeoutId) clearTimeout(timeoutId); } catch (e) {}
             delete window[callbackName]; // コールバック関数を削除
             if (script && script.parentNode) {
               script.parentNode.removeChild(script); // スクリプトタグを削除
@@ -101,27 +145,32 @@ class GasAPI {
         script.src = fullUrl;
         script.async = true;
         
-        let timeoutId = setTimeout(() => {
-          console.error('API call timeout:', { functionName, fullUrl });
-          try {
-            // 遅延応答で callback 未定義にならないよう、しばらくはNOOPを残す
-            window[callbackName] = function noop() { /* late JSONP ignored */ };
-            // 60秒後に完全クリーンアップ
-            setTimeout(() => { try { delete window[callbackName]; } catch (_) {} }, 60000);
-            if (script && script.parentNode) {
-              script.parentNode.removeChild(script);
+        // タイムアウト設定（options.timeoutMs === null の場合は無限待機）
+        let timeoutId = null;
+        const timeoutMs = Object.prototype.hasOwnProperty.call(options, 'timeoutMs') ? options.timeoutMs : 20000;
+        if (timeoutMs !== null) {
+          timeoutId = setTimeout(() => {
+            console.error('API call timeout:', { functionName, fullUrl });
+            try {
+              // 遅延応答で callback 未定義にならないよう、しばらくはNOOPを残す
+              window[callbackName] = function noop() { /* late JSONP ignored */ };
+              // 60秒後に完全クリーンアップ
+              setTimeout(() => { try { delete window[callbackName]; } catch (_) {} }, 60000);
+              if (script && script.parentNode) {
+                script.parentNode.removeChild(script);
+              }
+            } catch (e) {}
+            
+            // タイムアウト時もオフライン同期システムに委譲を試行
+            if (window.OfflineSyncV2 && window.OfflineSyncV2.addOperation) {
+              console.log('[API] タイムアウト、オフライン同期システムに委譲');
+              resolve({ success: false, error: 'offline_delegate', offline: true, functionName, params });
+            } else {
+              this._reportError(`JSONPタイムアウト: ${functionName}`);
+              resolve({ success: false, error: `JSONPタイムアウト: ${functionName}`, timeout: true });
             }
-          } catch (e) {}
-          
-          // タイムアウト時もオフライン同期システムに委譲を試行
-          if (window.OfflineSyncV2 && window.OfflineSyncV2.addOperation) {
-            console.log('[API] タイムアウト、オフライン同期システムに委譲');
-            resolve({ success: false, error: 'offline_delegate', offline: true, functionName, params });
-          } else {
-            this._reportError(`JSONPタイムアウト: ${functionName}`);
-            resolve({ success: false, error: `JSONPタイムアウト: ${functionName}`, timeout: true });
-          }
-        }, 10000); // API通信最優先: タイムアウトを10秒に短縮
+          }, timeoutMs);
+        }
 
         script.onerror = (error) => {
           console.error('API call error:', error, { functionName, fullUrl });
@@ -377,7 +426,7 @@ class GasAPI {
 
   // 満席検知機能
   static async getFullCapacityTimeslots() {
-    const response = await this._callApi('getFullCapacityTimeslots', []);
+    const response = await this._callApi('getFullCapacityTimeslots', [], { timeoutMs: null });
     return response;
   }
 
@@ -395,17 +444,78 @@ class GasAPI {
 
   // 強化されたステータス監視システム用の新しいAPI
   static async sendStatusNotificationEmail(emailData) {
-    const response = await this._callApi('sendStatusNotificationEmail', [emailData]);
-    return response;
+    try {
+      const hardcodedList = Array.isArray(FULL_CAPACITY_NOTIFICATION_EMAILS) ? FULL_CAPACITY_NOTIFICATION_EMAILS : [];
+      const provided = (emailData && Array.isArray(emailData.emails)) ? emailData.emails : [];
+      const merged = Array.from(new Set([
+        ...hardcodedList.map(e => String(e || '').trim()).filter(Boolean),
+        ...provided.map(e => String(e || '').trim()).filter(Boolean)
+      ]));
+
+      if (!merged.length) {
+        const err = '通知先メールアドレスが設定されていません';
+        this._reportError(err);
+        return { success: false, error: err };
+      }
+
+      const sanitizeNumber = (v, d = 0) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+      };
+      const payload = { ...(emailData || {}), emails: merged };
+      // 統計/サマリーの安全化
+      if (payload.statistics && typeof payload.statistics === 'object') {
+        payload.statistics = {
+          totalChecks: sanitizeNumber(payload.statistics.totalChecks, 0),
+          totalNotifications: sanitizeNumber(payload.statistics.totalNotifications, 0),
+          averageEmptySeats: sanitizeNumber(payload.statistics.averageEmptySeats, 0),
+          lastCheckTime: payload.statistics.lastCheckTime || null
+        };
+      }
+      if (payload.summary && typeof payload.summary === 'object') {
+        payload.summary = {
+          totalTimeslots: sanitizeNumber(payload.summary.totalTimeslots, 0),
+          fullCapacity: sanitizeNumber(payload.summary.fullCapacity, 0),
+          criticalCapacity: sanitizeNumber(payload.summary.criticalCapacity, 0),
+          warningCapacity: sanitizeNumber(payload.summary.warningCapacity, 0),
+          normalCapacity: sanitizeNumber(payload.summary.normalCapacity, 0),
+          totalSeats: sanitizeNumber(payload.summary.totalSeats, 0),
+          totalOccupied: sanitizeNumber(payload.summary.totalOccupied, 0),
+          totalEmpty: sanitizeNumber(payload.summary.totalEmpty, 0)
+        };
+      }
+
+      const shouldRetry = (err, attempt) => {
+        const msg = (err && err.message) || '';
+        // success:false や timeout を含む場合はリトライ対象
+        return attempt < 3 && /timeout|offline|fail|HTTP|script_error|JSONP|network/i.test(msg);
+      };
+
+      const task = async () => {
+        const resp = await this._callApi('sendStatusNotificationEmail', [payload], { timeoutMs: null });
+        if (!resp || resp.success === false) {
+          const errMsg = (resp && (resp.error || resp.message)) || 'メール送信に失敗しました';
+          throw new Error(errMsg);
+        }
+        return resp;
+      };
+
+      const response = await this._retryWithBackoff(task, shouldRetry, { retries: 3, baseDelayMs: 500, maxDelayMs: 3000, jitter: true });
+      return response;
+    } catch (e) {
+      const finalMsg = `通知メール送信に失敗しました: ${e.message || e}`;
+      try { this._reportError(finalMsg); } catch (_) {}
+      return { success: false, error: finalMsg };
+    }
   }
 
   static async getDetailedCapacityAnalysis(group = null, day = null, timeslot = null) {
-    const response = await this._callApi('getDetailedCapacityAnalysis', [group, day, timeslot]);
+    const response = await this._callApi('getDetailedCapacityAnalysis', [group, day, timeslot], { timeoutMs: null });
     return response;
   }
 
   static async getCapacityStatistics() {
-    const response = await this._callApi('getCapacityStatistics', []);
+    const response = await this._callApi('getCapacityStatistics', [], { timeoutMs: null });
     return response;
   }
 

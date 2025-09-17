@@ -4,7 +4,7 @@
 
 function doPost(e) {
   let response;
-  let callback = e.parameter.callback; // コールバック関数名を取得
+  let callback = e.parameter && e.parameter.callback; // コールバック関数名を取得（無い場合は純JSONで返す）
 
   // プリフライトリクエストの場合の処理
   if (e.method === "OPTIONS") {
@@ -90,6 +90,18 @@ function doPost(e) {
 
   } catch (err) {
     response = { error: err.message };
+  }
+
+  // callback が無ければ純JSONで返却（CORS対応）
+  if (!callback) {
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+    return ContentService.createTextOutput(JSON.stringify(response))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(headers);
   }
 
   // JSONP形式でレスポンスを返す

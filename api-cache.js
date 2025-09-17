@@ -196,7 +196,17 @@ class APICache {
   getAPIFunction(functionName) {
     // 実際のAPI関数を返す（GasAPIから動的に取得）
     if (typeof window !== 'undefined' && window.GasAPI) {
-      return window.GasAPI[functionName] || window.GasAPI._callApi.bind(window.GasAPI, functionName);
+      const apiClass = window.GasAPI;
+
+      // 静的メソッドが存在する場合は、クラスにバインドして返す（this を保持）
+      if (typeof apiClass[functionName] === 'function') {
+        return apiClass[functionName].bind(apiClass);
+      }
+
+      // メソッドが無い場合は汎用の _callApi をラップ（params は配列で渡す）
+      if (typeof apiClass._callApi === 'function') {
+        return (...params) => apiClass._callApi(functionName, params);
+      }
     }
     
     // フォールバック
