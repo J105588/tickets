@@ -29,142 +29,6 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="sidebar.css">
   <link rel="stylesheet" href="offline-sync-v2.css">
-  <style>
-    /* プッシュ通知ボタンのスタイル */
-    .push-notification-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-end;
-      /* iOS最適化 */
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      /* 点滅防止 */
-      transition: none;
-      -webkit-transition: none;
-    }
-
-    .push-notification-container.show {
-      display: flex !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      /* iOS最適化 */
-      -webkit-transform: translateZ(0) !important;
-      transform: translateZ(0) !important;
-    }
-
-    .push-notification-container.hide {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      /* iOS最適化 */
-      -webkit-transform: translateZ(0) !important;
-      transform: translateZ(0) !important;
-    }
-
-    /* iOS向けの追加スタイル */
-    @supports (-webkit-touch-callout: none) {
-      .push-notification-container {
-        /* iOS Safari専用の最適化 */
-        -webkit-overflow-scrolling: touch;
-        will-change: transform, opacity;
-      }
-      
-      .push-btn {
-        /* iOS向けのタッチ最適化 */
-        -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        user-select: none;
-        /* タッチ時の視覚的フィードバック */
-        transition: all 0.2s ease;
-      }
-      
-      .push-btn:active {
-        transform: scale(0.95);
-        opacity: 0.8;
-      }
-    }
-
-    .push-btn {
-      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-      color: white;
-      border: none;
-      border-radius: 25px;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-      transition: all 0.3s ease;
-      min-width: 160px;
-    }
-
-    .push-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
-    }
-
-    .push-btn:active {
-      transform: translateY(0);
-    }
-
-    .push-btn.test-btn {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    }
-
-    .push-btn.test-btn:hover {
-      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-    }
-
-    .notification-status {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 500;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(10px);
-    }
-
-    /* アニメーション */
-    @keyframes slideInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes slideOutUp {
-      from {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      to {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-    }
-
-    .notification-message {
-      animation: slideInDown 0.3s ease-out;
-    }
-
-    .notification-message.hiding {
-      animation: slideOutUp 0.3s ease-in forwards;
-    }
-  </style>
 </head>
 <body>
 
@@ -225,45 +89,12 @@
       <p>しばらくお待ちください。操作はできません。</p>
     </div>
   </div>
-  
-  <!-- iOS ホーム画面追加モーダル -->
-  <div id="ios-homescreen-modal" class="modal">
-    <div class="modal-content" style="text-align: center; max-width: 400px;">
-      <span class="close-button" onclick="document.getElementById('ios-homescreen-modal').classList.remove('show')">&times;</span>
-      <h3>ホーム画面への追加</h3>
-      <p>iOSでプッシュ通知を受け取るには、このウェブサイトをホーム画面に追加する必要があります。</p>
-      <div style="margin: 20px 0;">
-        <p><strong>手順:</strong></p>
-        <ol style="text-align: left;">
-          <li>下部の<strong>共有ボタン</strong>をタップ</li>
-          <li><strong>「ホーム画面に追加」</strong>を選択</li>
-          <li>右上の<strong>「追加」</strong>をタップ</li>
-        </ol>
-      </div>
-      <div>
-        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjMDA3YmZmIj48cGF0aCBkPSJNMTIsMTVMMTcsMTBIMTRWNEgxMFYxMEg3TDEyLDE1TTIxLDE0VjE4QTMsMy4wIDAsMCwxIDE4LDIxSDZBMywzLjAgMCwwLDEgMywxOFY0QTMsMy4wIDAsMCwxIDYsMUgxMkExLDEuMCAwLDAsMSAxMywyQTEsMS4wIDAsMCwxIDEyLDNINkEyLDIuMCAwLDAsMCA1LDRIMTlBMiwyLjAgMCwwLDEgMjEsNlYxNFoiIC8+PC9zdmc+" alt="ホーム画面に追加アイコン" style="width: 48px; height: 48px;">
-      </div>
-      <button class="btn btn-primary" style="margin-top: 20px;" onclick="document.getElementById('ios-homescreen-modal').classList.remove('show')">閉じる</button>
-    </div>
-  </div>
-
-  <!-- プッシュ通知設定ボタン -->
-  <div id="push-notification-container" class="push-notification-container hide">
-    <button id="enable-push-btn" class="push-btn">満席通知を有効にする</button>
-    <button id="test-notification-btn" class="push-btn test-btn" style="display: none;">試験配信を送信</button>
-    <div id="notification-status" class="notification-status" style="display: none;">
-      <span id="status-text">通知状態: 未設定</span>
-    </div>
-  </div>
 
   <!-- 最適化されたスクリプトローダー（統合版） -->
   <script type="module" src="optimized-loader.js"></script>
   
   <!-- 既存のスクリプト（最適化されたローダーが管理） -->
   <script type="module" src="index-main.js"></script>
-  
-  <!-- プッシュ通知スクリプト -->
-  <script type="module" src="push-notification.js"></script>
   
   <!-- PWA Service Worker Registration -->
   <script>

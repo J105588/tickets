@@ -36,12 +36,7 @@ window.onload = async () => {
     console.log('ログ表示システム初期化完了');
 
     // 満席監視（30秒毎、ログページのみ）
-    try { 
-      // GasAPIをインポートしていることを確認
-      if (typeof GasAPI !== 'undefined') {
-        setInterval(checkFullTimeslotsAndNotify, 30000); 
-      }
-    } catch (_) {}
+    try { setInterval(checkFullTimeslotsAndNotify, 30000); } catch (_) {}
 
     // SWへ最高管理者モード登録（ログ画面はsuperadminのみアクセス想定）
     try {
@@ -125,23 +120,6 @@ async function checkFullTimeslotsAndNotify() {
         try {
           if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({ type: 'FULL_ALERT', group, day, timeslot });
-            
-            // Web Push APIを使用して通知を送信（サーバーサイドで処理）
-            try {
-              // サーバーサイドでプッシュ通知を送信するAPIを呼び出す
-              await GasAPI.callFunction('sendPushNotification', {
-                type: 'full_alert',
-                group,
-                day,
-                timeslot,
-                title: `満席通知`,
-                message: `${group} ${day}日目 ${timeslot}時間帯が満席になりました`,
-                url: window.location.origin + window.location.pathname
-              });
-              console.log('プッシュ通知を送信しました:', group, day, timeslot);
-            } catch (pushError) {
-              console.warn('プッシュ通知の送信に失敗:', pushError);
-            }
           }
         } catch (_) {}
         // ページ内バナーも即時表示

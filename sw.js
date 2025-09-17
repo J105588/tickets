@@ -1,5 +1,5 @@
-// sw.js - 静的資産キャッシュとオフライン表示の強化版（PWA更新通知対応、iOS Push対応）
-const CACHE_NAME = 'tickets-optimized-v5';
+// sw.js - 静的資産キャッシュとオフライン表示の強化版（PWA更新通知対応）
+const CACHE_NAME = 'tickets-optimized-v4';
 // 自己修復（self-heal）機能のフラグ（デフォルトOFF。クライアントからメッセージでONにできる）
 let SELF_HEAL_ENABLED = false;
 // 最高管理者モードのクライアント（window client id の集合）
@@ -70,145 +70,6 @@ self.addEventListener('install', (event) => {
 	self.skipWaiting();
 });
 
-// プッシュ通知を受信した時の処理
-self.addEventListener('push', (event) => {
-	try {
-		let data = {};
-		if (event.data) {
-			try {
-				data = event.data.json();
-			} catch (e) {
-				data = { message: event.data.text() };
-			}
-		}
-
-		// 通知タイプに基づいて処理
-		const notificationType = data.type || 'default';
-		let title = '新しい通知';
-		let options = {
-			body: data.message || '新しい情報があります',
-			icon: '/icon-192x192.png',
-			badge: '/badge-96x96.png',
-			vibrate: [100, 50, 100],
-			tag: notificationType,
-			renotify: true,
-			data: data,
-			// iOS向けの追加設定
-			requireInteraction: false,
-			silent: false,
-			timestamp: Date.now()
-		};
-
-		// 通知タイプに応じた設定
-		switch (notificationType) {
-			case 'full_alert':
-				title = '満席になりました';
-				options.body = `${data.group || ''} ${data.day || ''}-${data.timeslot || ''} が満席になりました`;
-				options.actions = [
-					{ action: 'view', title: '確認する' },
-					{ action: 'close', title: '閉じる' }
-				];
-				// iOS向けの重要度設定
-				options.requireInteraction = true;
-				break;
-			case 'system_update':
-				title = 'システム更新';
-				options.actions = [
-					{ action: 'update', title: '更新する' },
-					{ action: 'close', title: '後で' }
-				];
-				break;
-			case 'ios_in_app':
-				// iOS向けのアプリ内通知として処理
-				title = data.title || '新しい通知';
-				options.body = data.body || data.message || '';
-				options.actions = data.actions || [];
-				// iOS向けの特別な処理
-				options.requireInteraction = false;
-				break;
-		}
-
-		// iOS向けの通知表示最適化
-		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-		if (isIOS) {
-			// iOS向けの通知設定を調整
-			options.vibrate = undefined; // iOSではvibrateは無効
-			options.badge = undefined; // iOSではbadgeは制限される場合がある
-		}
-
-		// 通知を表示
-		event.waitUntil(
-			self.registration.showNotification(title, options)
-		);
-	} catch (error) {
-		console.error('Push notification error:', error);
-	}
-});
-
-// 通知がクリックされた時の処理
-self.addEventListener('notificationclick', (event) => {
-	event.notification.close();
-
-	const data = event.notification.data || {};
-	const action = event.action;
-	const notificationType = event.notification.tag;
-
-	// アクションに応じた処理
-	switch (action) {
-		case 'view':
-			// 満席情報を表示するページへ移動
-			event.waitUntil(
-				self.clients.matchAll({ type: 'window' }).then((clientList) => {
-					// 既存のウィンドウがあれば、そこに移動
-					for (const client of clientList) {
-						if (client.url.includes('/seats.html') && 'focus' in client) {
-							return client.focus();
-						}
-					}
-					// なければ新しいウィンドウを開く
-					return self.clients.openWindow('/seats.html');
-				})
-			);
-			break;
-		case 'update':
-			// 更新処理
-			self.skipWaiting();
-			break;
-		case 'close':
-			// 何もしない（通知は既に閉じられている）
-			break;
-		default:
-			// デフォルトの動作（通知タイプに応じて処理）
-			switch (notificationType) {
-				case 'full_alert':
-					event.waitUntil(
-						self.clients.matchAll({ type: 'window' }).then((clientList) => {
-							for (const client of clientList) {
-								if (client.url.includes('/seats.html') && 'focus' in client) {
-									return client.focus();
-								}
-							}
-							return self.clients.openWindow('/seats.html');
-						})
-					);
-					break;
-				case 'system_update':
-					self.skipWaiting();
-					break;
-				default:
-					// デフォルトはホームページを開く
-					event.waitUntil(
-						self.clients.matchAll({ type: 'window' }).then((clientList) => {
-							for (const client of clientList) {
-								if ('focus' in client) return client.focus();
-							}
-							return self.clients.openWindow('/');
-						})
-					);
-			}
-	}
-});
-
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		Promise.all([
@@ -243,147 +104,17 @@ self.addEventListener('message', (event) => {
 		const payload = { type: 'FULL_ALERT', group: event.data.group, day: event.data.day, timeslot: event.data.timeslot, ts: Date.now() };
 		event.waitUntil((async () => {
 			try {
-				// 全クライアントに通知
 				const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-				clients.forEach(c => { 
-					try { 
-						c.postMessage(payload); 
-					} catch(_) {} 
-				});
-
-				// プッシュ通知を送信
-				await this.sendFullAlertNotification(payload);
-			} catch (error) {
-				console.error('FULL_ALERT処理エラー:', error);
-			}
+				clients.forEach(c => { try { if (SUPERADMIN_CLIENT_IDS.has(c.id)) { c.postMessage(payload); } } catch(_) {} });
+				if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
+					const title = '満席になりました';
+					const body = `${payload.group} ${payload.day}-${payload.timeslot} が満席になりました`;
+					await self.registration.showNotification(title, { body, tag: 'full-alert', renotify: true });
+				}
+			} catch (_) {}
 		})());
-	}
-
-	// 試験配信の処理
-	if (event.data && event.data.type === 'TEST_NOTIFICATION') {
-		event.waitUntil((async () => {
-			try {
-				const testData = event.data.notification ? JSON.parse(event.data.notification) : event.data;
-				await this.sendTestNotification(testData);
-			} catch (error) {
-				console.error('TEST_NOTIFICATION処理エラー:', error);
-			}
-		})());
-	}
-
-	// 管理者モードの確認
-	if (event.data && event.data.type === 'CHECK_ADMIN_MODE') {
-		const clientId = (event.source && event.source.id) || (event.clientId) || null;
-		const isAdmin = clientId && SUPERADMIN_CLIENT_IDS.has(clientId);
-		
-		// クライアントに管理者モードの状態を返信
-		if (event.source) {
-			event.source.postMessage({
-				type: 'ADMIN_MODE_STATUS',
-				isAdmin: isAdmin
-			});
-		}
-	}
-
-	// 最高管理者モードの確認
-	if (event.data && event.data.type === 'CHECK_SUPERADMIN_MODE') {
-		const clientId = (event.source && event.source.id) || (event.clientId) || null;
-		const isSuperAdmin = clientId && SUPERADMIN_CLIENT_IDS.has(clientId);
-		
-		// クライアントに最高管理者モードの状態を返信
-		if (event.source) {
-			event.source.postMessage({
-				type: 'SUPERADMIN_MODE_STATUS',
-				isSuperAdmin: isSuperAdmin
-			});
-		}
 	}
 });
-
-// 満席通知を送信
-async function sendFullAlertNotification(payload) {
-	try {
-		const title = '満席になりました';
-		const body = `${payload.group} ${payload.day}-${payload.timeslot} が満席になりました`;
-		
-		// 通知オプションを設定
-		const options = {
-			body,
-			tag: 'full-alert',
-			renotify: true,
-			icon: '/icon-192x192.png',
-			badge: '/badge-96x96.png',
-			vibrate: [100, 50, 100],
-			requireInteraction: true,
-			silent: false,
-			timestamp: Date.now(),
-			data: payload,
-			actions: [
-				{ action: 'view', title: '確認する' },
-				{ action: 'close', title: '閉じる' }
-			]
-		};
-
-		// iOS向けの調整
-		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-		if (isIOS) {
-			options.vibrate = undefined;
-			options.badge = undefined;
-		}
-
-		// 通知を表示
-		if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
-			await self.registration.showNotification(title, options);
-			console.log('満席通知を送信しました:', payload);
-		} else {
-			console.warn('通知権限がありません');
-		}
-	} catch (error) {
-		console.error('満席通知の送信に失敗:', error);
-	}
-}
-
-// 試験配信を送信
-async function sendTestNotification(testData) {
-	try {
-		const title = testData.title || '試験配信';
-		const body = testData.body || '満席通知システムのテストです。';
-		
-		// 通知オプションを設定
-		const options = {
-			body,
-			tag: 'test-notification',
-			renotify: false,
-			icon: '/icon-192x192.png',
-			badge: '/badge-96x96.png',
-			vibrate: [100, 50, 100],
-			requireInteraction: false,
-			silent: false,
-			timestamp: Date.now(),
-			data: testData,
-			actions: [
-				{ action: 'close', title: '閉じる' }
-			]
-		};
-
-		// iOS向けの調整
-		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-		if (isIOS) {
-			options.vibrate = undefined;
-			options.badge = undefined;
-		}
-
-		// 通知を表示
-		if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
-			await self.registration.showNotification(title, options);
-			console.log('試験配信を送信しました:', testData);
-		} else {
-			console.warn('通知権限がありません');
-		}
-	} catch (error) {
-		console.error('試験配信の送信に失敗:', error);
-	}
-}
 
 // 新しいService Workerが利用可能になった時の処理
 self.addEventListener('message', (event) => {
