@@ -375,6 +375,24 @@ class GasAPI {
     return apiUrlManager.getAllUrls();
   }
 
+  // 満席検知機能
+  static async getFullCapacityTimeslots() {
+    const response = await this._callApi('getFullCapacityTimeslots', []);
+    return response;
+  }
+
+  // 満席通知設定
+  static async setFullCapacityNotification(email, enabled = true) {
+    const response = await this._callApi('setFullCapacityNotification', [email, enabled]);
+    return response;
+  }
+
+  // 満席通知設定取得
+  static async getFullCapacityNotificationSettings() {
+    const response = await this._callApi('getFullCapacityNotificationSettings', []);
+    return response;
+  }
+
   // 危険コマンド実行
 }
 

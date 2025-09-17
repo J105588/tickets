@@ -2,6 +2,7 @@
 
 import GasAPI from './api.js';
 import { loadSidebar, toggleSidebar } from './sidebar.js';
+import fullCapacityMonitor from './full-capacity-monitor.js';
 
 // グローバル変数
 let currentLogs = [];
@@ -22,6 +23,11 @@ window.onload = async () => {
     window.applyFilters = applyFilters;
     window.showLogDetail = showLogDetail;
     window.closeLogDetail = closeLogDetail;
+    window.showFullCapacitySettings = showFullCapacitySettings;
+    window.closeFullCapacitySettings = closeFullCapacitySettings;
+    window.saveFullCapacitySettings = saveFullCapacitySettings;
+    window.testFullCapacityNotification = testFullCapacityNotification;
+    window.manualFullCapacityCheck = manualFullCapacityCheck;
     
     // 初期データ読み込み
     await loadStatistics();
@@ -130,7 +136,7 @@ async function checkFullTimeslotsAndNotify() {
   } catch (_) {}
 }
 
-// 統計情報を読み込み
+// 統計情報を読み込み（最適化版）
 async function loadStatistics() {
   try {
     console.log('統計情報を読み込み中...');
@@ -139,24 +145,114 @@ async function loadStatistics() {
     if (response && response.success) {
       console.log('統計情報取得成功:', response.statistics);
       updateStatistics(response.statistics);
+      
+      // 統計情報のキャッシュを更新
+      try {
+        localStorage.setItem('audit_statistics_cache', JSON.stringify({
+          data: response.statistics,
+          timestamp: Date.now()
+        }));
+      } catch (_) {}
     } else {
       console.warn('統計情報の取得に失敗:', response?.message || 'Unknown error');
-      // デフォルト値を表示
+      
+      // キャッシュから復元を試行
+      const cachedStats = getCachedStatistics();
+      if (cachedStats) {
+        console.log('キャッシュから統計情報を復元');
+        updateStatistics(cachedStats);
+      } else {
+        // デフォルト値を表示
+        updateStatistics({
+          totalOperations: 0,
+          successCount: 0,
+          errorCount: 0
+        });
+      }
+    }
+    
+    // 満席監視統計も読み込み
+    await loadFullCapacityStatistics();
+    
+  } catch (error) {
+    console.error('統計情報読み込みエラー:', error);
+    
+    // キャッシュから復元を試行
+    const cachedStats = getCachedStatistics();
+    if (cachedStats) {
+      console.log('エラー時、キャッシュから統計情報を復元');
+      updateStatistics(cachedStats);
+    } else {
+      // エラー時もデフォルト値を表示
       updateStatistics({
         totalOperations: 0,
         successCount: 0,
         errorCount: 0
       });
     }
-  } catch (error) {
-    console.error('統計情報読み込みエラー:', error);
-    // エラー時もデフォルト値を表示
-    updateStatistics({
-      totalOperations: 0,
-      successCount: 0,
-      errorCount: 0
-    });
   }
+}
+
+// 満席監視統計を読み込み
+async function loadFullCapacityStatistics() {
+  try {
+    const response = await GasAPI._callApi('getFullCapacityTimeslots', []);
+    
+    if (response && response.success) {
+      const summary = response.summary || {};
+      updateFullCapacityStatistics(summary);
+    } else {
+      console.warn('満席監視統計の取得に失敗:', response?.message);
+      updateFullCapacityStatistics({ fullCapacity: 0, totalChecked: 0 });
+    }
+  } catch (error) {
+    console.error('満席監視統計読み込みエラー:', error);
+    updateFullCapacityStatistics({ fullCapacity: 0, totalChecked: 0 });
+  }
+}
+
+// 満席監視統計を更新
+function updateFullCapacityStatistics(summary) {
+  const fullCapacityCard = document.getElementById('full-capacity-card');
+  const fullCapacityCount = document.getElementById('full-capacity-count');
+  
+  if (fullCapacityCard && fullCapacityCount) {
+    const fullCapacity = summary.fullCapacity || 0;
+    const totalChecked = summary.totalChecked || 0;
+    
+    fullCapacityCount.textContent = `${fullCapacity}/${totalChecked}`;
+    
+    // 満席がある場合のみ表示
+    if (totalChecked > 0) {
+      fullCapacityCard.style.display = 'block';
+      
+      // 満席がある場合は警告色
+      if (fullCapacity > 0) {
+        fullCapacityCard.classList.add('error');
+        fullCapacityCount.style.color = '#dc3545';
+      } else {
+        fullCapacityCard.classList.remove('error');
+        fullCapacityCount.style.color = '#28a745';
+      }
+    } else {
+      fullCapacityCard.style.display = 'none';
+    }
+  }
+}
+
+// キャッシュされた統計情報を取得
+function getCachedStatistics() {
+  try {
+    const cached = localStorage.getItem('audit_statistics_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // 5分以内のキャッシュのみ有効
+      if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+        return parsed.data;
+      }
+    }
+  } catch (_) {}
+  return null;
 }
 
 // 統計情報を更新
@@ -258,13 +354,49 @@ function updateLogsTable() {
     
     // エラーログかどうかを判定
     const isError = isErrorLog(log);
-    const errorClass = isHighlightEnabled && isError ? 'error-row' : '';
+    const errorLevel = getErrorLevel(log);
+    
+    // エラーレベルに応じたクラス設定
+    let rowClass = '';
+    if (isHighlightEnabled && isError) {
+      switch (errorLevel) {
+        case 'critical':
+          rowClass = 'error-row-critical';
+          break;
+        case 'timeout':
+          rowClass = 'error-row-timeout';
+          break;
+        case 'network':
+          rowClass = 'error-row-network';
+          break;
+        default:
+          rowClass = 'error-row';
+      }
+    }
+    
+    // エラーレベル表示用のアイコン
+    let errorIcon = '';
+    if (isHighlightEnabled && isError) {
+      switch (errorLevel) {
+        case 'critical':
+          errorIcon = '<span class="error-icon critical" title="致命的エラー">🚨</span>';
+          break;
+        case 'timeout':
+          errorIcon = '<span class="error-icon timeout" title="タイムアウト">⏰</span>';
+          break;
+        case 'network':
+          errorIcon = '<span class="error-icon network" title="ネットワークエラー">🌐</span>';
+          break;
+        default:
+          errorIcon = '<span class="error-icon error" title="エラー">⚠️</span>';
+      }
+    }
     
     return `
-      <tr class="${errorClass}">
+      <tr class="${rowClass}">
         <td>${timestamp}</td>
         <td>${log.type}</td>
-        <td>${log.action}</td>
+        <td>${errorIcon}${log.action}</td>
         <td><code>${shortMeta}</code></td>
         <td>${log.sessionId || '-'}</td>
         <td>${log.ipAddress || '-'}</td>
@@ -319,51 +451,197 @@ function clearFilters() {
   updateLogsTable();
 }
 
-// CSVエクスポート
+// CSVエクスポート（最適化版）
 function exportLogsCSV() {
   const rows = getFilteredLogs();
-  if (!rows || rows.length === 0) { alert('エクスポート対象のログがありません'); return; }
-  const headers = ['timestamp','type','action','metadata','sessionId','ipAddress','userAgent'];
-  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => {
-    let v = r[h];
-    if (h === 'metadata') {
-      try { v = JSON.stringify(JSON.parse(r.metadata || '{}')); } catch(_) { v = String(r.metadata || ''); }
-    }
-    if (h === 'timestamp') {
-      try { v = new Date(r.timestamp).toISOString(); } catch(_) { v = String(r.timestamp || ''); }
-    }
-    const s = String(v == null ? '' : v);
-    // CSVエスケープ
-    const needsQuote = /[",\n]/.test(s);
-    const esc = s.replace(/"/g, '""');
-    return needsQuote ? '"' + esc + '"' : esc;
-  }).join(','))).join('\n');
+  if (!rows || rows.length === 0) { 
+    alert('エクスポート対象のログがありません'); 
+    return; 
+  }
+  
+  // プログレスバーを表示
+  showExportProgress();
+  
+  // 非同期でCSV生成（UIブロックを防ぐ）
+  setTimeout(() => {
+    try {
+      const headers = ['timestamp','type','action','metadata','sessionId','ipAddress','userAgent'];
+      const csvRows = [headers.join(',')];
+      
+      // バッチ処理でメモリ効率を向上
+      const batchSize = 100;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const batchCsv = batch.map(r => headers.map(h => {
+          let v = r[h];
+          if (h === 'metadata') {
+            try { 
+              v = JSON.stringify(JSON.parse(r.metadata || '{}')); 
+            } catch(_) { 
+              v = String(r.metadata || ''); 
+            }
+          }
+          if (h === 'timestamp') {
+            try { 
+              v = new Date(r.timestamp).toISOString(); 
+            } catch(_) { 
+              v = String(r.timestamp || ''); 
+            }
+          }
+          const s = String(v == null ? '' : v);
+          // CSVエスケープ
+          const needsQuote = /[",\n\r]/.test(s);
+          const esc = s.replace(/"/g, '""');
+          return needsQuote ? '"' + esc + '"' : esc;
+        }).join(','));
+        
+        csvRows.push(...batchCsv);
+        
+        // プログレス更新
+        updateExportProgress(i + batch.length, rows.length);
+      }
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `logs_${Date.now()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+      const csv = csvRows.join('\n');
+      
+      // BOM付きUTF-8でエンコード（Excel対応）
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // ファイル名に日時を含める
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
+      a.download = `audit_logs_${dateStr}.csv`;
+      
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { 
+        URL.revokeObjectURL(url); 
+        a.remove(); 
+        hideExportProgress();
+      }, 0);
+      
+    } catch (error) {
+      console.error('CSVエクスポートエラー:', error);
+      alert('CSVエクスポート中にエラーが発生しました: ' + error.message);
+      hideExportProgress();
+    }
+  }, 100);
 }
 
-// エラーログかどうかを判定
+// エクスポート進捗表示
+function showExportProgress() {
+  const progressContainer = document.getElementById('export-progress-container');
+  if (progressContainer) {
+    progressContainer.style.display = 'block';
+    updateExportProgress(0, 1);
+  }
+}
+
+// エクスポート進捗更新
+function updateExportProgress(current, total) {
+  const progressBar = document.getElementById('export-progress-bar');
+  const progressText = document.getElementById('export-progress-text');
+  
+  if (progressBar) {
+    const percentage = Math.round((current / total) * 100);
+    progressBar.style.width = percentage + '%';
+  }
+  
+  if (progressText) {
+    progressText.textContent = `エクスポート中... ${current}/${total} (${Math.round((current / total) * 100)}%)`;
+  }
+}
+
+// エクスポート進捗非表示
+function hideExportProgress() {
+  const progressContainer = document.getElementById('export-progress-container');
+  if (progressContainer) {
+    progressContainer.style.display = 'none';
+  }
+}
+
+// エラーログかどうかを判定（強化版）
 function isErrorLog(log) {
   try {
+    // アクション名での判定
+    const actionLower = (log.action || '').toLowerCase();
+    if (actionLower.includes('error') || actionLower.includes('fail') || 
+        actionLower.includes('exception') || actionLower.includes('timeout')) {
+      return true;
+    }
+    
+    // メタデータでの判定
     if (log.metadata && log.metadata !== 'null') {
       const metaObj = JSON.parse(log.metadata);
-      // メタデータにsuccess: false、error、またはアクション名にerrorが含まれている場合はエラー
-      if (metaObj.success === false || metaObj.error || 
-          log.action.includes('error') || log.action.includes('Error')) {
+      
+      // 明示的なエラーフラグ
+      if (metaObj.success === false || metaObj.error || metaObj.failed) {
+        return true;
+      }
+      
+      // エラーメッセージの存在
+      if (metaObj.errorMessage || metaObj.errorMsg || metaObj.message) {
+        const errorMsg = (metaObj.errorMessage || metaObj.errorMsg || metaObj.message || '').toLowerCase();
+        if (errorMsg.includes('error') || errorMsg.includes('fail') || 
+            errorMsg.includes('exception') || errorMsg.includes('timeout')) {
+          return true;
+        }
+      }
+      
+      // HTTPステータスコードでの判定
+      if (metaObj.statusCode && metaObj.statusCode >= 400) {
+        return true;
+      }
+      
+      // レスポンス時間での判定（タイムアウト）
+      if (metaObj.responseTime && metaObj.responseTime > 10000) {
         return true;
       }
     }
+    
+    // セッションIDが異常な場合
+    if (log.sessionId === 'nosession' || !log.sessionId) {
+      return true;
+    }
+    
     return false;
   } catch (e) {
-    // JSON解析エラーの場合はエラーとして扱わない
-    return false;
+    // JSON解析エラーの場合はエラーとして扱う
+    return true;
+  }
+}
+
+// エラーレベルの判定
+function getErrorLevel(log) {
+  try {
+    const actionLower = (log.action || '').toLowerCase();
+    
+    // 致命的エラー
+    if (actionLower.includes('critical') || actionLower.includes('fatal')) {
+      return 'critical';
+    }
+    
+    // タイムアウトエラー
+    if (actionLower.includes('timeout')) {
+      return 'timeout';
+    }
+    
+    // ネットワークエラー
+    if (actionLower.includes('network') || actionLower.includes('connection')) {
+      return 'network';
+    }
+    
+    // 一般的なエラー
+    if (isErrorLog(log)) {
+      return 'error';
+    }
+    
+    return 'normal';
+  } catch (e) {
+    return 'error';
   }
 }
 
@@ -516,3 +794,122 @@ window.addEventListener('beforeunload', () => {
     clearInterval(autoRefreshInterval);
   }
 });
+
+// 満席通知設定モーダルを表示
+function showFullCapacitySettings() {
+  const modal = document.getElementById('full-capacity-settings-modal');
+  if (!modal) return;
+  
+  // 現在の設定を読み込み
+  const settings = fullCapacityMonitor.getSettings();
+  document.getElementById('notification-email').value = settings.email || '';
+  document.getElementById('notification-enabled').checked = settings.enabled;
+  
+  // 監視間隔を設定
+  const intervalSelect = document.getElementById('check-interval');
+  intervalSelect.value = settings.checkInterval;
+  
+  // 現在の状態を表示
+  const statusElement = document.getElementById('monitor-status');
+  statusElement.textContent = settings.isRunning ? '監視中' : '停止中';
+  statusElement.style.color = settings.isRunning ? '#28a745' : '#dc3545';
+  
+  modal.classList.add('show');
+}
+
+// 満席通知設定モーダルを閉じる
+function closeFullCapacitySettings() {
+  const modal = document.getElementById('full-capacity-settings-modal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// 満席通知設定を保存
+async function saveFullCapacitySettings() {
+  const email = document.getElementById('notification-email').value.trim();
+  const enabled = document.getElementById('notification-enabled').checked;
+  const interval = parseInt(document.getElementById('check-interval').value);
+  
+  if (enabled && !email) {
+    alert('通知を有効にする場合は、メールアドレスを入力してください。');
+    return;
+  }
+  
+  try {
+    const success = await fullCapacityMonitor.updateNotificationSettings(email, enabled);
+    
+    if (success) {
+      // 監視間隔を更新
+      fullCapacityMonitor.setCheckInterval(interval);
+      
+      alert('設定を保存しました。');
+      closeFullCapacitySettings();
+      
+      // 設定に応じて監視を開始/停止
+      if (enabled) {
+        fullCapacityMonitor.start();
+      } else {
+        fullCapacityMonitor.stop();
+      }
+    } else {
+      alert('設定の保存に失敗しました。');
+    }
+  } catch (error) {
+    console.error('設定保存エラー:', error);
+    alert('設定の保存中にエラーが発生しました: ' + error.message);
+  }
+}
+
+// テスト通知を送信
+function testFullCapacityNotification() {
+  const email = document.getElementById('notification-email').value.trim();
+  
+  if (!email) {
+    alert('テスト通知を送信するには、メールアドレスを入力してください。');
+    return;
+  }
+  
+  // テスト用の満席データ
+  const testData = [{
+    group: 'テスト演劇',
+    day: '1',
+    timeslot: 'A'
+  }];
+  
+  // ブラウザ通知をテスト
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('満席通知テスト', {
+      body: 'テスト演劇 1日目 A が満席になりました',
+      icon: '/favicon.ico'
+    });
+  }
+  
+  // メール通知をテスト
+  GasAPI._callApi('sendFullCapacityEmail', [{
+    email: email,
+    fullTimeslots: testData,
+    timestamp: new Date().toISOString(),
+    isTest: true
+  }]).then(response => {
+    if (response && response.success) {
+      alert('テスト通知を送信しました。');
+    } else {
+      alert('テスト通知の送信に失敗しました: ' + (response?.message || 'Unknown error'));
+    }
+  }).catch(error => {
+    console.error('テスト通知エラー:', error);
+    alert('テスト通知の送信中にエラーが発生しました: ' + error.message);
+  });
+}
+
+// 手動で満席チェック
+async function manualFullCapacityCheck() {
+  try {
+    await fullCapacityMonitor.manualCheck();
+    alert('手動チェックを実行しました。');
+  } catch (error) {
+    console.error('手動チェックエラー:', error);
+    alert('手動チェック中にエラーが発生しました: ' + error.message);
+  }
+}

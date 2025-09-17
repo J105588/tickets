@@ -61,6 +61,11 @@ function doPost(e) {
       , 'getClientAuditLogs': getClientAuditLogs
       , 'getClientAuditStatistics': getClientAuditStatistics
       , 'getFullTimeslots': getFullTimeslots
+      // 満席検知・通知システム用の新しいAPI
+      , 'getFullCapacityTimeslots': getFullCapacityTimeslots
+      , 'setFullCapacityNotification': setFullCapacityNotification
+      , 'getFullCapacityNotificationSettings': getFullCapacityNotificationSettings
+      , 'sendFullCapacityEmail': sendFullCapacityEmail
     };
 
     if (functionMap[funcName]) {
@@ -139,7 +144,13 @@ function doGet(e) {
         'execDangerCommand': execDangerCommand,
         'recordClientAudit': recordClientAudit,
         'getClientAuditLogs': getClientAuditLogs,
-        'getClientAuditStatistics': getClientAuditStatistics
+        'getClientAuditStatistics': getClientAuditStatistics,
+        'getFullTimeslots': getFullTimeslots,
+        // 満席検知・通知システム用の新しいAPI
+        'getFullCapacityTimeslots': getFullCapacityTimeslots,
+        'setFullCapacityNotification': setFullCapacityNotification,
+        'getFullCapacityNotificationSettings': getFullCapacityNotificationSettings,
+        'sendFullCapacityEmail': sendFullCapacityEmail
       };
 
       if (functionMap[funcName]) {

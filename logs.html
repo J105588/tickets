@@ -71,6 +71,10 @@
           <div class="stat-number" id="last-update">-</div>
           <div class="stat-label">最終更新</div>
         </div>
+        <div class="stat-card" id="full-capacity-card" style="display: none;">
+          <div class="stat-number" id="full-capacity-count">-</div>
+          <div class="stat-label">満席公演</div>
+        </div>
       </div>
 
       <!-- フィルター -->
@@ -114,10 +118,15 @@
           <label for="error-highlight-toggle">エラー強調:</label>
           <input id="error-highlight-toggle" type="checkbox" checked />
         </div>
+        <div class="filter-group">
+          <label for="full-capacity-notification-toggle">満席通知:</label>
+          <input id="full-capacity-notification-toggle" type="checkbox" />
+        </div>
         <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
           <button class="btn-primary" onclick="applyFilters()">フィルター適用</button>
           <button class="btn-secondary" onclick="clearFilters()">クリア</button>
           <button class="btn-secondary" onclick="exportLogsCSV()">CSV出力</button>
+          <button class="btn-secondary" onclick="showFullCapacitySettings()">満席通知設定</button>
         </div>
       </div>
 
@@ -154,6 +163,70 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- エクスポート進捗表示 -->
+  <div id="export-progress-container" class="export-progress-container">
+    <div class="export-progress-bar">
+      <div class="progress"></div>
+    </div>
+    <div id="export-progress-text" class="export-progress-text">エクスポート準備中...</div>
+  </div>
+
+  <!-- 満席通知設定モーダル -->
+  <div id="full-capacity-settings-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>満席通知設定</h3>
+        <button class="close-btn" onclick="closeFullCapacitySettings()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>通知設定</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label for="notification-email">通知メールアドレス:</label>
+              <input type="email" id="notification-email" placeholder="example@domain.com" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
+            </div>
+            <div class="detail-item">
+              <label for="notification-enabled">通知を有効にする:</label>
+              <input type="checkbox" id="notification-enabled" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h4>監視設定</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label for="check-interval">チェック間隔:</label>
+              <select id="check-interval" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="15000">15秒</option>
+                <option value="30000" selected>30秒</option>
+                <option value="60000">1分</option>
+                <option value="300000">5分</option>
+              </select>
+            </div>
+            <div class="detail-item">
+              <label>現在の状態:</label>
+              <span id="monitor-status">停止中</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h4>テスト</h4>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="testFullCapacityNotification()">テスト通知</button>
+            <button class="btn-secondary" onclick="manualFullCapacityCheck()">手動チェック</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-buttons" style="padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn-primary" onclick="saveFullCapacitySettings()">保存</button>
+        <button class="btn-secondary" onclick="closeFullCapacitySettings()">キャンセル</button>
+      </div>
+    </div>
   </div>
 
   <!-- ログ詳細モーダル -->

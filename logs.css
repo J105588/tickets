@@ -217,7 +217,7 @@
   color: #721c24;
 }
 
-/* エラーログ行の強調表示 */
+/* エラーログ行の強調表示（レベル別） */
 .error-row {
   background-color: #fff5f5 !important;
   border-left: 4px solid #dc3545 !important;
@@ -230,6 +230,92 @@
 .error-row td {
   color: #721c24;
   font-weight: 500;
+}
+
+/* 致命的エラー */
+.error-row-critical {
+  background-color: #f8d7da !important;
+  border-left: 4px solid #dc3545 !important;
+  animation: criticalPulse 2s infinite;
+}
+
+.error-row-critical:hover {
+  background-color: #f5c6cb !important;
+}
+
+.error-row-critical td {
+  color: #721c24;
+  font-weight: 600;
+}
+
+/* タイムアウトエラー */
+.error-row-timeout {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+.error-row-timeout:hover {
+  background-color: #ffeaa7 !important;
+}
+
+.error-row-timeout td {
+  color: #856404;
+  font-weight: 500;
+}
+
+/* ネットワークエラー */
+.error-row-network {
+  background-color: #d1ecf1 !important;
+  border-left: 4px solid #17a2b8 !important;
+}
+
+.error-row-network:hover {
+  background-color: #bee5eb !important;
+}
+
+.error-row-network td {
+  color: #0c5460;
+  font-weight: 500;
+}
+
+/* エラーアイコン */
+.error-icon {
+  margin-right: 6px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.error-icon.critical {
+  animation: criticalBlink 1s infinite;
+}
+
+.error-icon.timeout {
+  animation: timeoutPulse 2s infinite;
+}
+
+.error-icon.network {
+  animation: networkFlicker 3s infinite;
+}
+
+/* アニメーション */
+@keyframes criticalPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes criticalBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@keyframes timeoutPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes networkFlicker {
+  0%, 90%, 100% { opacity: 1; }
+  95% { opacity: 0.5; }
 }
 
 /* JSON表示 */
@@ -468,4 +554,81 @@
 
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* エクスポート進捗表示 */
+.export-progress-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  min-width: 300px;
+  display: none;
+}
+
+.export-progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.export-progress-bar .progress {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.export-progress-text {
+  text-align: center;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 満席通知設定モーダル */
+.modal-buttons {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modal-buttons .btn-primary,
+.modal-buttons .btn-secondary {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.modal-buttons .btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal-buttons .btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.modal-buttons .btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.modal-buttons .btn-secondary:hover {
+  background-color: #545b62;
 }
