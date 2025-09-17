@@ -66,6 +66,10 @@ function doPost(e) {
       , 'setFullCapacityNotification': setFullCapacityNotification
       , 'getFullCapacityNotificationSettings': getFullCapacityNotificationSettings
       , 'sendFullCapacityEmail': sendFullCapacityEmail
+      // 強化されたステータス監視システム用の新しいAPI
+      , 'sendStatusNotificationEmail': sendStatusNotificationEmail
+      , 'getDetailedCapacityAnalysis': getDetailedCapacityAnalysis
+      , 'getCapacityStatistics': getCapacityStatistics
     };
 
     if (functionMap[funcName]) {
@@ -150,7 +154,11 @@ function doGet(e) {
         'getFullCapacityTimeslots': getFullCapacityTimeslots,
         'setFullCapacityNotification': setFullCapacityNotification,
         'getFullCapacityNotificationSettings': getFullCapacityNotificationSettings,
-        'sendFullCapacityEmail': sendFullCapacityEmail
+        'sendFullCapacityEmail': sendFullCapacityEmail,
+        // 強化されたステータス監視システム用の新しいAPI
+        'sendStatusNotificationEmail': sendStatusNotificationEmail,
+        'getDetailedCapacityAnalysis': getDetailedCapacityAnalysis,
+        'getCapacityStatistics': getCapacityStatistics
       };
 
       if (functionMap[funcName]) {
@@ -2098,6 +2106,358 @@ function sendFullCapacityEmail(emailData) {
     
   } catch (e) {
     Logger.log('sendFullCapacityEmail failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 強化されたステータス通知メールを送信（詳細分析付き）
+ */
+function sendStatusNotificationEmail(emailData) {
+  try {
+    const { emails, notifications, statistics, timestamp } = emailData;
+    
+    // 複数アドレス対応：単一アドレスまたは配列
+    const emailList = Array.isArray(emails) ? emails : [emails];
+    
+    if (!emailList.length || !emailList.some(email => email && email.includes('@'))) {
+      return { success: false, message: '有効なメールアドレスが指定されていません' };
+    }
+    
+    if (!Array.isArray(notifications) || notifications.length === 0) {
+      return { success: false, message: '通知データが指定されていません' };
+    }
+    
+    // 優先度別にグループ化
+    const highPriority = notifications.filter(n => n.priority === 'high');
+    const mediumPriority = notifications.filter(n => n.priority === 'medium');
+    const lowPriority = notifications.filter(n => n.priority === 'low');
+    
+    // メール件名
+    let subject = '座席状況変化通知 - 座席管理システム';
+    if (highPriority.length > 0) {
+      subject = `[緊急] ${subject}`;
+    } else if (mediumPriority.length > 0) {
+      subject = `[重要] ${subject}`;
+    }
+    
+    // メール本文
+    let body = '座席状況に変化が検知されました。\n\n';
+    
+    // 緊急通知（高優先度）
+    if (highPriority.length > 0) {
+      body += '🚨 緊急通知 🚨\n';
+      body += '='.repeat(50) + '\n';
+      highPriority.forEach(notification => {
+        const { timeslot, change } = notification;
+        body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
+        body += `  空席数: ${timeslot.emptySeats}席 / ${timeslot.totalSeats}席\n`;
+        body += `  変化: ${change.type === 'empty_seats' ? `${change.from}席 → ${change.to}席` : change.to}\n`;
+        body += `  状態: ${timeslot.isFull ? '満席' : '空席あり'}\n\n`;
+      });
+    }
+    
+    // 重要通知（中優先度）
+    if (mediumPriority.length > 0) {
+      body += '⚠️ 重要通知 ⚠️\n';
+      body += '='.repeat(50) + '\n';
+      mediumPriority.forEach(notification => {
+        const { timeslot, change } = notification;
+        body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
+        body += `  空席数: ${timeslot.emptySeats}席 / ${timeslot.totalSeats}席\n`;
+        body += `  変化: ${change.type === 'empty_seats' ? `${change.from}席 → ${change.to}席` : change.to}\n\n`;
+      });
+    }
+    
+    // 一般通知（低優先度）
+    if (lowPriority.length > 0) {
+      body += '📊 状況変化 📊\n';
+      body += '='.repeat(50) + '\n';
+      lowPriority.forEach(notification => {
+        const { timeslot, change } = notification;
+        body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}: ${timeslot.emptySeats}席空き\n`;
+      });
+    }
+    
+    // 統計情報
+    if (statistics) {
+      body += '\n📈 システム統計 📈\n';
+      body += '='.repeat(50) + '\n';
+      body += `総チェック回数: ${statistics.totalChecks}回\n`;
+      body += `総通知回数: ${statistics.totalNotifications}回\n`;
+      body += `平均空席数: ${statistics.averageEmptySeats.toFixed(1)}席\n`;
+      body += `最終チェック: ${statistics.lastCheckTime ? new Date(statistics.lastCheckTime).toLocaleString('ja-JP') : '不明'}\n`;
+      
+      // 容量トレンド
+      if (statistics.capacityTrends && statistics.capacityTrends.length > 0) {
+        body += '\n📊 容量トレンド（直近5回）\n';
+        const recentTrends = statistics.capacityTrends.slice(-5);
+        recentTrends.forEach(trend => {
+          const time = new Date(trend.timestamp).toLocaleString('ja-JP', { 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+          body += `${time}: 空席${trend.totalEmpty}席 (${trend.totalOccupied}/${trend.totalSeats})\n`;
+        });
+      }
+    }
+    
+    body += '\n' + '='.repeat(50) + '\n';
+    body += `通知時刻: ${new Date(timestamp).toLocaleString('ja-JP')}\n`;
+    body += `システム: 強化座席監視システム\n`;
+    
+    // 複数アドレスにメール送信
+    const results = [];
+    let successCount = 0;
+    let failureCount = 0;
+    
+    emailList.forEach(email => {
+      if (!email || !email.includes('@')) {
+        results.push({ email, success: false, message: '無効なメールアドレス' });
+        failureCount++;
+        return;
+      }
+      
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: subject,
+          body: body
+        });
+        
+        results.push({ email, success: true, message: '送信成功' });
+        successCount++;
+        
+      } catch (emailError) {
+        Logger.log(`ステータス通知メール送信エラー (${email}): ${emailError.message}`);
+        results.push({ email, success: false, message: emailError.message });
+        failureCount++;
+      }
+    });
+    
+    Logger.log(`ステータス通知メール送信完了: ${successCount}件成功, ${failureCount}件失敗 (${notifications.length}件の通知)`);
+    
+    return { 
+      success: successCount > 0, 
+      message: `${successCount}件のメールを送信しました${failureCount > 0 ? ` (${failureCount}件失敗)` : ''}`,
+      sentTo: emailList,
+      results: results,
+      notificationCount: notifications.length,
+      successCount: successCount,
+      failureCount: failureCount
+    };
+    
+  } catch (e) {
+    Logger.log('sendStatusNotificationEmail failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 詳細な容量分析を取得（強化版）
+ */
+function getDetailedCapacityAnalysis(group = null, day = null, timeslot = null) {
+  try {
+    const result = {
+      summary: {
+        totalTimeslots: 0,
+        fullCapacity: 0,
+        warningCapacity: 0,
+        criticalCapacity: 0,
+        normalCapacity: 0,
+        totalSeats: 0,
+        totalOccupied: 0,
+        totalEmpty: 0
+      },
+      timeslots: [],
+      capacityDistribution: {},
+      trends: []
+    };
+    
+    const keys = Object.keys(SEAT_SHEET_IDS || {});
+    
+    // フィルタリング
+    let filteredKeys = keys;
+    if (group) {
+      filteredKeys = filteredKeys.filter(key => key.startsWith(`${group}-`));
+    }
+    if (day) {
+      filteredKeys = filteredKeys.filter(key => key.includes(`-${day}-`));
+    }
+    if (timeslot) {
+      filteredKeys = filteredKeys.filter(key => key.endsWith(`-${timeslot}`));
+    }
+    
+    Logger.log(`詳細容量分析開始: ${filteredKeys.length}個の公演を分析`);
+    
+    for (const key of filteredKeys) {
+      try {
+        const parts = key.split('-');
+        if (parts.length < 3) continue;
+        
+        const groupName = parts[0];
+        const dayName = parts[1];
+        const timeslotName = parts[2];
+        
+        const timeslotInfo = {
+          group: groupName,
+          day: dayName,
+          timeslot: timeslotName,
+          totalSeats: 0,
+          occupiedSeats: 0,
+          emptySeats: 0,
+          isFull: false,
+          capacityLevel: 'normal',
+          lastChecked: new Date()
+        };
+        
+        try {
+          const sheet = getSheet(groupName, dayName, timeslotName, 'SEAT');
+          if (!sheet) {
+            timeslotInfo.error = 'シートが見つかりません';
+            result.timeslots.push(timeslotInfo);
+            continue;
+          }
+          
+          const lastRow = sheet.getLastRow();
+          if (lastRow <= 1) {
+            timeslotInfo.error = 'データがありません';
+            result.timeslots.push(timeslotInfo);
+            continue;
+          }
+          
+          // 詳細データ取得
+          const data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+          
+          for (let i = 0; i < data.length; i++) {
+            const rowLabel = data[i][0];
+            const colLabel = data[i][1];
+            const statusC = (data[i][2] || '').toString().trim();
+            const nameD = (data[i][3] || '').toString();
+            const statusE = (data[i][4] || '').toString().trim();
+            
+            if (!rowLabel || !colLabel) continue;
+            
+            const seatId = String(rowLabel) + String(colLabel);
+            if (!isValidSeatId(seatId)) continue;
+            
+            timeslotInfo.totalSeats++;
+            
+            if (statusC === '空' || statusC === '') {
+              timeslotInfo.emptySeats++;
+            } else {
+              timeslotInfo.occupiedSeats++;
+            }
+          }
+          
+          // 容量レベル判定
+          if (timeslotInfo.emptySeats === 0) {
+            timeslotInfo.capacityLevel = 'full';
+          } else if (timeslotInfo.emptySeats <= 2) {
+            timeslotInfo.capacityLevel = 'critical';
+          } else if (timeslotInfo.emptySeats <= 5) {
+            timeslotInfo.capacityLevel = 'warning';
+          } else {
+            timeslotInfo.capacityLevel = 'normal';
+          }
+          
+          timeslotInfo.isFull = timeslotInfo.emptySeats === 0;
+          
+          // サマリー更新
+          result.summary.totalTimeslots++;
+          result.summary.totalSeats += timeslotInfo.totalSeats;
+          result.summary.totalOccupied += timeslotInfo.occupiedSeats;
+          result.summary.totalEmpty += timeslotInfo.emptySeats;
+          
+          switch (timeslotInfo.capacityLevel) {
+            case 'full':
+              result.summary.fullCapacity++;
+              break;
+            case 'critical':
+              result.summary.criticalCapacity++;
+              break;
+            case 'warning':
+              result.summary.warningCapacity++;
+              break;
+            case 'normal':
+              result.summary.normalCapacity++;
+              break;
+          }
+          
+          result.timeslots.push(timeslotInfo);
+          
+        } catch (innerError) {
+          Logger.log(`詳細分析エラー (${groupName}-${dayName}-${timeslotName}): ${innerError.message}`);
+          timeslotInfo.error = innerError.message;
+          result.timeslots.push(timeslotInfo);
+        }
+        
+      } catch (outerError) {
+        Logger.log(`公演キー処理エラー (${key}): ${outerError.message}`);
+      }
+    }
+    
+    // 容量分布を計算
+    result.capacityDistribution = {
+      full: result.summary.fullCapacity,
+      critical: result.summary.criticalCapacity,
+      warning: result.summary.warningCapacity,
+      normal: result.summary.normalCapacity
+    };
+    
+    Logger.log(`詳細容量分析完了: ${result.summary.totalTimeslots}公演分析`);
+    
+    return { 
+      success: true, 
+      analysis: result,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (e) {
+    Logger.log('getDetailedCapacityAnalysis failed: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * 容量統計を取得
+ */
+function getCapacityStatistics() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    
+    // 統計データを取得（プロパティから）
+    const totalChecks = parseInt(props.getProperty('CAPACITY_TOTAL_CHECKS') || '0');
+    const totalNotifications = parseInt(props.getProperty('CAPACITY_TOTAL_NOTIFICATIONS') || '0');
+    const lastCheckTime = props.getProperty('CAPACITY_LAST_CHECK_TIME');
+    const averageEmptySeats = parseFloat(props.getProperty('CAPACITY_AVERAGE_EMPTY') || '0');
+    
+    // 現在の詳細分析を実行
+    const currentAnalysis = getDetailedCapacityAnalysis();
+    
+    const statistics = {
+      totalChecks: totalChecks,
+      totalNotifications: totalNotifications,
+      lastCheckTime: lastCheckTime ? new Date(lastCheckTime) : null,
+      averageEmptySeats: averageEmptySeats,
+      currentAnalysis: currentAnalysis.success ? currentAnalysis.analysis : null,
+      systemStatus: {
+        isMonitoring: props.getProperty('CAPACITY_MONITORING_ENABLED') === 'true',
+        checkInterval: parseInt(props.getProperty('CAPACITY_CHECK_INTERVAL') || '15000'),
+        notificationCooldown: parseInt(props.getProperty('CAPACITY_NOTIFICATION_COOLDOWN') || '300000')
+      }
+    };
+    
+    return { 
+      success: true, 
+      statistics: statistics,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (e) {
+    Logger.log('getCapacityStatistics failed: ' + e.message);
     return { success: false, message: e.message };
   }
 }

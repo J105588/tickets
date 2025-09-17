@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>強化座席監視ダッシュボード - 座席管理システム</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .monitoring-dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+
+        .dashboard-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .status-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+            transition: transform 0.2s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-card.full { border-left-color: #e74c3c; }
+        .status-card.critical { border-left-color: #f39c12; }
+        .status-card.warning { border-left-color: #f1c40f; }
+        .status-card.normal { border-left-color: #27ae60; }
+
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .status-count {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .status-description {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0 0 0;
+        }
+
+        .monitoring-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .monitoring-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-indicator.running {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status-indicator.stopped {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .control-hint {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .btn-icon {
+            margin-right: 6px;
+        }
+
+        .quick-settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .quick-settings h4 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .quick-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-quick {
+            padding: 6px 12px;
+            border: 1px solid #e1e5e9;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-quick:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .btn-quick.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .control-group input, .control-group select {
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .control-group input:focus, .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .timeslots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .timeslot-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+        }
+
+        .timeslot-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .timeslot-card.full { border-left-color: #e74c3c; }
+        .timeslot-card.critical { border-left-color: #f39c12; }
+        .timeslot-card.warning { border-left-color: #f1c40f; }
+        .timeslot-card.normal { border-left-color: #27ae60; }
+
+        .timeslot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .timeslot-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .capacity-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .capacity-badge.full { background: #e74c3c; color: white; }
+        .capacity-badge.critical { background: #f39c12; color: white; }
+        .capacity-badge.warning { background: #f1c40f; color: #333; }
+        .capacity-badge.normal { background: #27ae60; color: white; }
+
+        .timeslot-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+
+        .timeslot-progress {
+            width: 100%;
+            height: 8px;
+            background: #e1e5e9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.full { background: #e74c3c; }
+        .progress-bar.critical { background: #f39c12; }
+        .progress-bar.warning { background: #f1c40f; }
+        .progress-bar.normal { background: #27ae60; }
+
+        .last-updated {
+            font-size: 12px;
+            color: #999;
+            text-align: right;
+        }
+
+        .statistics-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item-large {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-value-large {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .stat-label-large {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e1e5e9;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .notification-history {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .notification-item {
+            padding: 10px;
+            border-left: 3px solid;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .notification-item.high { border-left-color: #e74c3c; }
+        .notification-item.medium { border-left-color: #f39c12; }
+        .notification-item.low { border-left-color: #27ae60; }
+
+        .notification-text {
+            font-weight: 600;
+            margin: 0 0 5px 0;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .monitoring-dashboard {
+                padding: 10px;
+            }
+            
+            .dashboard-title {
+                font-size: 24px;
+            }
+            
+            .status-indicators {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .timeslots-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="monitoring-dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">強化座席監視ダッシュボード</h1>
+            <p class="dashboard-subtitle">リアルタイム座席状況監視・分析システム</p>
+        </div>
+
+        <div id="error-container" class="error-message" style="display: none;">
+            <span id="error-message"></span>
+        </div>
+
+        <div id="success-container" class="success-message" style="display: none;">
+            <span id="success-message"></span>
+        </div>
+
+        <!-- ステータスインジケーター -->
+        <div class="status-indicators">
+            <div class="status-card full">
+                <h3>満席</h3>
+                <p class="status-count" id="full-count">0</p>
+                <p class="status-description">空席なし</p>
+            </div>
+            <div class="status-card critical">
+                <h3>緊急</h3>
+                <p class="status-count" id="critical-count">0</p>
+                <p class="status-description">2席以下</p>
+            </div>
+            <div class="status-card warning">
+                <h3>警告</h3>
+                <p class="status-count" id="warning-count">0</p>
+                <p class="status-description">5席以下</p>
+            </div>
+            <div class="status-card normal">
+                <h3>正常</h3>
+                <p class="status-count" id="normal-count">0</p>
+                <p class="status-description">6席以上</p>
+            </div>
+        </div>
+
+        <!-- 監視コントロール -->
+        <div class="monitoring-controls">
+            <div class="controls-header">
+                <h3>監視設定</h3>
+                <div class="monitoring-status">
+                    <span class="status-indicator" id="monitoring-status-indicator">停止中</span>
+                </div>
+            </div>
+            
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label for="check-interval">チェック間隔 (秒)</label>
+                    <input type="number" id="check-interval" value="15" min="5" max="300">
+                    <small class="control-hint">5-300秒の範囲で設定</small>
+                </div>
+                <div class="control-group">
+                    <label for="warning-threshold">警告閾値 (席)</label>
+                    <input type="number" id="warning-threshold" value="5" min="1" max="20">
+                    <small class="control-hint">この席数以下で警告通知</small>
+                </div>
+                <div class="control-group">
+                    <label for="critical-threshold">緊急閾値 (席)</label>
+                    <input type="number" id="critical-threshold" value="2" min="0" max="10">
+                    <small class="control-hint">この席数以下で緊急通知</small>
+                </div>
+                <div class="control-group">
+                    <label for="cooldown-period">通知クールダウン (分)</label>
+                    <input type="number" id="cooldown-period" value="5" min="1" max="60">
+                    <small class="control-hint">同じ公演への重複通知を防ぐ</small>
+                </div>
+            </div>
+            
+            <div class="control-buttons">
+                <button class="btn btn-primary" id="start-monitoring">
+                    <span class="btn-icon">▶</span>
+                    監視開始
+                </button>
+                <button class="btn btn-danger" id="stop-monitoring" disabled>
+                    <span class="btn-icon">⏹</span>
+                    監視停止
+                </button>
+                <button class="btn btn-success" id="manual-check">
+                    <span class="btn-icon">🔄</span>
+                    手動チェック
+                </button>
+                <button class="btn btn-secondary" id="update-settings">
+                    <span class="btn-icon">⚙️</span>
+                    設定更新
+                </button>
+                <button class="btn btn-secondary" id="clear-history">
+                    <span class="btn-icon">🗑️</span>
+                    履歴クリア
+                </button>
+                <button class="btn btn-secondary" id="test-notification">
+                    <span class="btn-icon">📧</span>
+                    テスト通知
+                </button>
+            </div>
+            
+            <div class="quick-settings">
+                <h4>クイック設定</h4>
+                <div class="quick-buttons">
+                    <button class="btn-quick" data-interval="10">10秒間隔</button>
+                    <button class="btn-quick" data-interval="30">30秒間隔</button>
+                    <button class="btn-quick" data-interval="60">1分間隔</button>
+                    <button class="btn-quick" data-warning="3">警告3席</button>
+                    <button class="btn-quick" data-warning="5">警告5席</button>
+                    <button class="btn-quick" data-critical="1">緊急1席</button>
+                    <button class="btn-quick" data-critical="2">緊急2席</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 統計パネル -->
+        <div class="statistics-panel">
+            <h3>システム統計</h3>
+            <div class="statistics-grid">
+                <div class="stat-item-large">
+                    <p class="stat-value-large" id="total-checks">0</p>
+                    <p class="stat-label-large">総チェック回数</p>
+                </div>
+                <div class="stat-item-large">
+                    <p class="stat-value-large" id="total-notifications">0</p>
+                    <p class="stat-label-large">総通知回数</p>
+                </div>
+                <div class="stat-item-large">
+                    <p class="stat-value-large" id="average-empty">0</p>
+                    <p class="stat-label-large">平均空席数</p>
+                </div>
+                <div class="stat-item-large">
+                    <p class="stat-value-large" id="last-check-time">--:--</p>
+                    <p class="stat-label-large">最終チェック</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通知履歴 -->
+        <div class="notification-history">
+            <h3>通知履歴</h3>
+            <div id="notification-list">
+                <p style="text-align: center; color: #666; padding: 20px;">通知履歴がありません</p>
+            </div>
+        </div>
+
+        <!-- 公演一覧 -->
+        <div id="timeslots-container">
+            <div class="loading">座席データを読み込み中...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import GasAPI from './api.js';
+        import enhancedStatusMonitor from './enhanced-status-monitor.js';
+
+        class MonitoringDashboard {
+            constructor() {
+                this.isMonitoring = false;
+                this.updateInterval = null;
+                this.notificationHistory = [];
+                this.currentData = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadInitialData();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    checkInterval: document.getElementById('check-interval'),
+                    warningThreshold: document.getElementById('warning-threshold'),
+                    criticalThreshold: document.getElementById('critical-threshold'),
+                    cooldownPeriod: document.getElementById('cooldown-period'),
+                    startMonitoring: document.getElementById('start-monitoring'),
+                    stopMonitoring: document.getElementById('stop-monitoring'),
+                    manualCheck: document.getElementById('manual-check'),
+                    updateSettings: document.getElementById('update-settings'),
+                    clearHistory: document.getElementById('clear-history'),
+                    timeslotsContainer: document.getElementById('timeslots-container'),
+                    notificationList: document.getElementById('notification-list'),
+                    errorContainer: document.getElementById('error-container'),
+                    successContainer: document.getElementById('success-container'),
+                    errorMessage: document.getElementById('error-message'),
+                    successMessage: document.getElementById('success-message')
+                };
+            }
+
+            bindEvents() {
+                this.elements.startMonitoring.addEventListener('click', () => this.startMonitoring());
+                this.elements.stopMonitoring.addEventListener('click', () => this.stopMonitoring());
+                this.elements.manualCheck.addEventListener('click', () => this.manualCheck());
+                this.elements.updateSettings.addEventListener('click', () => this.updateSettings());
+                this.elements.clearHistory.addEventListener('click', () => this.clearHistory());
+                this.elements.testNotification.addEventListener('click', () => this.testNotification());
+                
+                // クイック設定ボタン
+                document.querySelectorAll('.btn-quick').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleQuickSetting(e.target));
+                });
+                
+                // 設定値の変更を監視
+                this.elements.checkInterval.addEventListener('change', () => this.updateStatusIndicator());
+                this.elements.warningThreshold.addEventListener('change', () => this.updateStatusIndicator());
+                this.elements.criticalThreshold.addEventListener('change', () => this.updateStatusIndicator());
+                this.elements.cooldownPeriod.addEventListener('change', () => this.updateStatusIndicator());
+            }
+
+            async loadInitialData() {
+                try {
+                    this.showLoading();
+                    const response = await GasAPI.getDetailedCapacityAnalysis();
+                    if (response.success) {
+                        this.currentData = response.analysis;
+                        this.updateDashboard();
+                        this.updateQuickButtonStates();
+                        this.updateStatusIndicator();
+                    } else {
+                        this.showError('データの読み込みに失敗しました: ' + response.message);
+                    }
+                } catch (error) {
+                    this.showError('データの読み込み中にエラーが発生しました: ' + error.message);
+                }
+            }
+
+            async startMonitoring() {
+                try {
+                    // 設定を更新
+                    await this.updateSettings();
+                    
+                    // 監視開始
+                    enhancedStatusMonitor.start();
+                    this.isMonitoring = true;
+                    
+                    // 定期更新を開始
+                    this.startPeriodicUpdate();
+                    
+                    this.elements.startMonitoring.disabled = true;
+                    this.elements.stopMonitoring.disabled = false;
+                    
+                    this.updateStatusIndicator();
+                    this.showSuccess('監視を開始しました');
+                } catch (error) {
+                    this.showError('監視開始に失敗しました: ' + error.message);
+                }
+            }
+
+            stopMonitoring() {
+                enhancedStatusMonitor.stop();
+                this.isMonitoring = false;
+                
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+                
+                this.elements.startMonitoring.disabled = false;
+                this.elements.stopMonitoring.disabled = true;
+                
+                this.updateStatusIndicator();
+                this.showSuccess('監視を停止しました');
+            }
+
+            async manualCheck() {
+                try {
+                    this.showLoading();
+                    await enhancedStatusMonitor.manualCheck();
+                    await this.loadInitialData();
+                    this.showSuccess('手動チェックを実行しました');
+                } catch (error) {
+                    this.showError('手動チェックに失敗しました: ' + error.message);
+                }
+            }
+
+            async updateSettings() {
+                try {
+                    const settings = {
+                        checkInterval: parseInt(this.elements.checkInterval.value) * 1000,
+                        warningThreshold: parseInt(this.elements.warningThreshold.value),
+                        criticalThreshold: parseInt(this.elements.criticalThreshold.value),
+                        notificationCooldown: parseInt(this.elements.cooldownPeriod.value) * 60 * 1000
+                    };
+                    
+                    enhancedStatusMonitor.updateCapacityThresholds({
+                        warning: settings.warningThreshold,
+                        critical: settings.criticalThreshold,
+                        full: 0
+                    });
+                    
+                    enhancedStatusMonitor.setCheckInterval(settings.checkInterval);
+                    enhancedStatusMonitor.setNotificationCooldown(settings.notificationCooldown);
+                    
+                    this.showSuccess('設定を更新しました');
+                } catch (error) {
+                    this.showError('設定更新に失敗しました: ' + error.message);
+                }
+            }
+
+            clearHistory() {
+                enhancedStatusMonitor.clearNotificationHistory();
+                this.notificationHistory = [];
+                this.updateNotificationHistory();
+                this.showSuccess('通知履歴をクリアしました');
+            }
+
+            async testNotification() {
+                try {
+                    const testData = {
+                        emails: ['jxjin2010@gmail.com'], // テスト用メールアドレス
+                        notifications: [{
+                            timeslot: {
+                                group: 'テスト',
+                                day: '1',
+                                timeslot: 'A',
+                                emptySeats: 0,
+                                totalSeats: 50,
+                                isFull: true
+                            },
+                            change: {
+                                type: 'capacity_status',
+                                from: 'available',
+                                to: 'full'
+                            },
+                            priority: 'high'
+                        }],
+                        statistics: enhancedStatusMonitor.getStatistics(),
+                        timestamp: new Date().toISOString(),
+                        isTest: true
+                    };
+
+                    const response = await GasAPI.sendStatusNotificationEmail(testData);
+                    if (response.success) {
+                        this.showSuccess('テスト通知を送信しました');
+                    } else {
+                        this.showError('テスト通知の送信に失敗しました: ' + response.message);
+                    }
+                } catch (error) {
+                    this.showError('テスト通知の送信中にエラーが発生しました: ' + error.message);
+                }
+            }
+
+            handleQuickSetting(button) {
+                const interval = button.dataset.interval;
+                const warning = button.dataset.warning;
+                const critical = button.dataset.critical;
+
+                if (interval) {
+                    this.elements.checkInterval.value = interval;
+                    this.updateQuickButtonStates();
+                    this.showSuccess(`チェック間隔を${interval}秒に設定しました`);
+                }
+
+                if (warning) {
+                    this.elements.warningThreshold.value = warning;
+                    this.updateQuickButtonStates();
+                    this.showSuccess(`警告閾値を${warning}席に設定しました`);
+                }
+
+                if (critical) {
+                    this.elements.criticalThreshold.value = critical;
+                    this.updateQuickButtonStates();
+                    this.showSuccess(`緊急閾値を${critical}席に設定しました`);
+                }
+
+                this.updateStatusIndicator();
+            }
+
+            updateQuickButtonStates() {
+                // 現在の設定値に基づいてクイックボタンの状態を更新
+                document.querySelectorAll('.btn-quick').forEach(btn => {
+                    btn.classList.remove('active');
+                    
+                    const interval = btn.dataset.interval;
+                    const warning = btn.dataset.warning;
+                    const critical = btn.dataset.critical;
+
+                    if (interval && parseInt(interval) === parseInt(this.elements.checkInterval.value)) {
+                        btn.classList.add('active');
+                    }
+                    if (warning && parseInt(warning) === parseInt(this.elements.warningThreshold.value)) {
+                        btn.classList.add('active');
+                    }
+                    if (critical && parseInt(critical) === parseInt(this.elements.criticalThreshold.value)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            updateStatusIndicator() {
+                const indicator = document.getElementById('monitoring-status-indicator');
+                if (this.isMonitoring) {
+                    indicator.textContent = '監視中';
+                    indicator.className = 'status-indicator running';
+                } else {
+                    indicator.textContent = '停止中';
+                    indicator.className = 'status-indicator stopped';
+                }
+            }
+
+            startPeriodicUpdate() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                const interval = parseInt(this.elements.checkInterval.value) * 1000;
+                this.updateInterval = setInterval(() => {
+                    this.loadInitialData();
+                }, interval);
+            }
+
+            updateDashboard() {
+                if (!this.currentData) return;
+                
+                this.updateStatusIndicators();
+                this.updateStatistics();
+                this.updateTimeslotsGrid();
+            }
+
+            updateStatusIndicators() {
+                const summary = this.currentData.summary;
+                
+                document.getElementById('full-count').textContent = summary.fullCapacity;
+                document.getElementById('critical-count').textContent = summary.criticalCapacity;
+                document.getElementById('warning-count').textContent = summary.warningCapacity;
+                document.getElementById('normal-count').textContent = summary.normalCapacity;
+            }
+
+            updateStatistics() {
+                const stats = enhancedStatusMonitor.getStatistics();
+                
+                document.getElementById('total-checks').textContent = stats.totalChecks;
+                document.getElementById('total-notifications').textContent = stats.totalNotifications;
+                document.getElementById('average-empty').textContent = stats.averageEmptySeats.toFixed(1);
+                
+                if (stats.lastCheckTime) {
+                    const time = new Date(stats.lastCheckTime).toLocaleTimeString('ja-JP', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    document.getElementById('last-check-time').textContent = time;
+                }
+            }
+
+            updateTimeslotsGrid() {
+                const timeslots = this.currentData.timeslots;
+                
+                if (timeslots.length === 0) {
+                    this.elements.timeslotsContainer.innerHTML = '<div class="loading">公演データがありません</div>';
+                    return;
+                }
+                
+                const grid = timeslots.map(timeslot => this.createTimeslotCard(timeslot)).join('');
+                this.elements.timeslotsContainer.innerHTML = `<div class="timeslots-grid">${grid}</div>`;
+            }
+
+            createTimeslotCard(timeslot) {
+                const capacityLevel = timeslot.capacityLevel || 'normal';
+                const occupancyRate = timeslot.totalSeats > 0 ? (timeslot.occupiedSeats / timeslot.totalSeats) * 100 : 0;
+                
+                return `
+                    <div class="timeslot-card ${capacityLevel}">
+                        <div class="timeslot-header">
+                            <h4 class="timeslot-title">${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}</h4>
+                            <span class="capacity-badge ${capacityLevel}">${this.getCapacityLevelText(capacityLevel)}</span>
+                        </div>
+                        <div class="timeslot-stats">
+                            <div class="stat-item">
+                                <p class="stat-value">${timeslot.emptySeats}</p>
+                                <p class="stat-label">空席</p>
+                            </div>
+                            <div class="stat-item">
+                                <p class="stat-value">${timeslot.occupiedSeats}</p>
+                                <p class="stat-label">利用中</p>
+                            </div>
+                        </div>
+                        <div class="timeslot-progress">
+                            <div class="progress-bar ${capacityLevel}" style="width: ${occupancyRate}%"></div>
+                        </div>
+                        <p class="last-updated">${new Date(timeslot.lastChecked).toLocaleString('ja-JP')}</p>
+                    </div>
+                `;
+            }
+
+            getCapacityLevelText(level) {
+                const texts = {
+                    full: '満席',
+                    critical: '緊急',
+                    warning: '警告',
+                    normal: '正常'
+                };
+                return texts[level] || '不明';
+            }
+
+            updateNotificationHistory() {
+                if (this.notificationHistory.length === 0) {
+                    this.elements.notificationList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">通知履歴がありません</p>';
+                    return;
+                }
+                
+                const history = this.notificationHistory.map(notification => `
+                    <div class="notification-item ${notification.priority}">
+                        <p class="notification-text">${notification.message}</p>
+                        <p class="notification-time">${new Date(notification.timestamp).toLocaleString('ja-JP')}</p>
+                    </div>
+                `).join('');
+                
+                this.elements.notificationList.innerHTML = history;
+            }
+
+            showLoading() {
+                this.elements.timeslotsContainer.innerHTML = '<div class="loading">データを読み込み中...</div>';
+            }
+
+            showError(message) {
+                this.elements.errorMessage.textContent = message;
+                this.elements.errorContainer.style.display = 'block';
+                this.elements.successContainer.style.display = 'none';
+                
+                setTimeout(() => {
+                    this.elements.errorContainer.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                this.elements.successMessage.textContent = message;
+                this.elements.successContainer.style.display = 'block';
+                this.elements.errorContainer.style.display = 'none';
+                
+                setTimeout(() => {
+                    this.elements.successContainer.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // ダッシュボードを初期化
+        const dashboard = new MonitoringDashboard();
+        
+        // グローバルに公開
+        window.MonitoringDashboard = dashboard;
+    </script>
+</body>
+</html>

@@ -393,6 +393,22 @@ class GasAPI {
     return response;
   }
 
+  // 強化されたステータス監視システム用の新しいAPI
+  static async sendStatusNotificationEmail(emailData) {
+    const response = await this._callApi('sendStatusNotificationEmail', [emailData]);
+    return response;
+  }
+
+  static async getDetailedCapacityAnalysis(group = null, day = null, timeslot = null) {
+    const response = await this._callApi('getDetailedCapacityAnalysis', [group, day, timeslot]);
+    return response;
+  }
+
+  static async getCapacityStatistics() {
+    const response = await this._callApi('getCapacityStatistics', []);
+    return response;
+  }
+
   // 危険コマンド実行
 }
 

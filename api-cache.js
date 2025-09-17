@@ -1,156 +1,282 @@
-// api-cache.js - API呼び出しの最適化とキャッシュ管理
+// api-cache.js - API呼び出し最適化・キャッシュシステム
+
+import { DEBUG_MODE, debugLog, ENHANCED_MONITORING_CONFIG } from './config.js';
+
 class APICache {
   constructor() {
     this.cache = new Map();
     this.pendingRequests = new Map();
-    this.cacheConfig = {
-      seatData: { ttl: 15000, maxSize: 50 }, // 15秒、最大50件（API通信最優先）
-      timeslotData: { ttl: 300000, maxSize: 50 }, // 5分、最大50件
-      systemLock: { ttl: 5000, maxSize: 10 }, // 5秒、最大10件（API通信最優先）
-      default: { ttl: 30000, maxSize: 100 } // 30秒、最大100件（API通信最優先）
-    };
-    this.cleanupInterval = setInterval(() => this.cleanup(), 30000); // 30秒ごとにクリーンアップ（API通信最優先）
-  }
-
-  generateCacheKey(functionName, params = []) {
-    return `${functionName}_${JSON.stringify(params)}`;
-  }
-
-  getCacheConfig(functionName) {
-    const configMap = {
-      'getSeatData': this.cacheConfig.seatData,
-      'getSeatDataMinimal': this.cacheConfig.seatData,
-      'getAllTimeslotsForGroup': this.cacheConfig.timeslotData,
-      'getSystemLock': this.cacheConfig.systemLock
-    };
-    return configMap[functionName] || this.cacheConfig.default;
-  }
-
-  get(functionName, params = []) {
-    const key = this.generateCacheKey(functionName, params);
-    const cached = this.cache.get(key);
+    this.requestQueue = [];
+    this.isProcessing = false;
+    this.maxConcurrentRequests = ENHANCED_MONITORING_CONFIG.maxConcurrentChecks;
+    this.activeRequests = 0;
+    this.cacheTimeout = ENHANCED_MONITORING_CONFIG.cacheTimeout;
+    this.retryAttempts = ENHANCED_MONITORING_CONFIG.retryAttempts;
+    this.retryDelay = ENHANCED_MONITORING_CONFIG.retryDelay;
     
-    if (!cached) return null;
+    // キャッシュクリーンアップの定期実行
+    this.startCacheCleanup();
     
-    const config = this.getCacheConfig(functionName);
+    debugLog('[APICache] 初期化完了', {
+      maxConcurrent: this.maxConcurrentRequests,
+      cacheTimeout: this.cacheTimeout,
+      retryAttempts: this.retryAttempts
+    });
+  }
+
+  // キャッシュクリーンアップを開始
+  startCacheCleanup() {
+    setInterval(() => {
+      this.cleanupExpiredCache();
+    }, this.cacheTimeout / 2); // キャッシュタイムアウトの半分の間隔でクリーンアップ
+  }
+
+  // 期限切れキャッシュをクリーンアップ
+  cleanupExpiredCache() {
     const now = Date.now();
+    let cleanedCount = 0;
     
-    if (now - cached.timestamp > config.ttl) {
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.cacheTimeout) {
+        this.cache.delete(key);
+        cleanedCount++;
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      debugLog('[APICache] キャッシュクリーンアップ', { cleanedCount });
+    }
+  }
+
+  // キャッシュキーを生成
+  generateCacheKey(functionName, params = []) {
+    const paramString = JSON.stringify(params);
+    return `${functionName}:${paramString}`;
+  }
+
+  // キャッシュからデータを取得
+  getFromCache(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    const now = Date.now();
+    if (now - entry.timestamp > this.cacheTimeout) {
       this.cache.delete(key);
       return null;
     }
     
-    return cached.data;
+    debugLog('[APICache] キャッシュヒット', { key });
+    return entry.data;
   }
 
-  set(functionName, params = [], data) {
-    const key = this.generateCacheKey(functionName, params);
-    const config = this.getCacheConfig(functionName);
-    
-    // キャッシュサイズ制限
-    if (this.cache.size >= config.maxSize) {
-      this.evictOldest();
-    }
-    
+  // キャッシュにデータを保存
+  setCache(key, data) {
     this.cache.set(key, {
-      data,
+      data: data,
       timestamp: Date.now()
     });
+    
+    debugLog('[APICache] キャッシュ保存', { key });
   }
 
-  evictOldest() {
-    let oldestKey = null;
-    let oldestTime = Date.now();
-    
-    for (const [key, value] of this.cache.entries()) {
-      if (value.timestamp < oldestTime) {
-        oldestTime = value.timestamp;
-        oldestKey = key;
-      }
-    }
-    
-    if (oldestKey) {
-      this.cache.delete(oldestKey);
-    }
-  }
-
-  cleanup() {
-    const now = Date.now();
-    const keysToDelete = [];
-    
-    for (const [key, value] of this.cache.entries()) {
-      const functionName = key.split('_')[0];
-      const config = this.getCacheConfig(functionName);
+  // リクエストキューに追加
+  addToQueue(request) {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        ...request,
+        resolve,
+        reject,
+        timestamp: Date.now()
+      });
       
-      if (now - value.timestamp > config.ttl) {
-        keysToDelete.push(key);
-      }
+      this.processQueue();
+    });
+  }
+
+  // リクエストキューを処理
+  async processQueue() {
+    if (this.isProcessing || this.requestQueue.length === 0) return;
+    
+    this.isProcessing = true;
+    
+    while (this.requestQueue.length > 0 && this.activeRequests < this.maxConcurrentRequests) {
+      const request = this.requestQueue.shift();
+      this.processRequest(request);
     }
     
-    keysToDelete.forEach(key => this.cache.delete(key));
+    this.isProcessing = false;
+  }
+
+  // 個別リクエストを処理
+  async processRequest(request) {
+    this.activeRequests++;
     
-    if (keysToDelete.length > 0) {
-      console.log(`🧹 キャッシュクリーンアップ: ${keysToDelete.length}件削除`);
+    try {
+      const result = await this.executeRequest(request);
+      request.resolve(result);
+    } catch (error) {
+      request.reject(error);
+    } finally {
+      this.activeRequests--;
+      this.processQueue(); // 次のリクエストを処理
     }
   }
 
-  // 重複リクエストの防止
-  async deduplicateRequest(functionName, params, requestFunction) {
-    const key = this.generateCacheKey(functionName, params);
-    
-    // 既に同じリクエストが進行中の場合、そのPromiseを返す
-    if (this.pendingRequests.has(key)) {
-      return this.pendingRequests.get(key);
+  // リクエストを実行（リトライ機能付き）
+  async executeRequest(request, attempt = 1) {
+    try {
+      const result = await request.function(...request.params);
+      return result;
+    } catch (error) {
+      if (attempt < this.retryAttempts) {
+        debugLog('[APICache] リトライ実行', { 
+          attempt, 
+          functionName: request.functionName,
+          error: error.message 
+        });
+        
+        await this.delay(this.retryDelay * attempt);
+        return this.executeRequest(request, attempt + 1);
+      } else {
+        throw error;
+      }
     }
+  }
+
+  // 遅延実行
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // 最適化されたAPI呼び出し
+  async callAPI(functionName, params = [], useCache = true) {
+    const cacheKey = this.generateCacheKey(functionName, params);
     
     // キャッシュから取得を試行
-    const cached = this.get(functionName, params);
-    if (cached) {
-      return cached;
-    }
-    
-    // 新しいリクエストを開始
-    const requestPromise = requestFunction().then(result => {
-      this.pendingRequests.delete(key);
-      this.set(functionName, params, result);
-      return result;
-    }).catch(error => {
-      this.pendingRequests.delete(key);
-      throw error;
-    });
-    
-    this.pendingRequests.set(key, requestPromise);
-    return requestPromise;
-  }
-
-  // 特定の関数のキャッシュをクリア
-  clearFunctionCache(functionName) {
-    const keysToDelete = [];
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(functionName + '_')) {
-        keysToDelete.push(key);
+    if (useCache) {
+      const cachedData = this.getFromCache(cacheKey);
+      if (cachedData) {
+        return cachedData;
       }
     }
-    keysToDelete.forEach(key => this.cache.delete(key));
+    
+    // 既に同じリクエストが処理中の場合は待機
+    if (this.pendingRequests.has(cacheKey)) {
+      debugLog('[APICache] 重複リクエスト待機', { cacheKey });
+      return this.pendingRequests.get(cacheKey);
+    }
+    
+    // 新しいリクエストを作成
+    const requestPromise = this.addToQueue({
+      functionName,
+      function: this.getAPIFunction(functionName),
+      params,
+      cacheKey
+    });
+    
+    // リクエストを記録
+    this.pendingRequests.set(cacheKey, requestPromise);
+    
+    try {
+      const result = await requestPromise;
+      
+      // 成功時はキャッシュに保存
+      if (useCache && result && result.success !== false) {
+        this.setCache(cacheKey, result);
+      }
+      
+      return result;
+    } finally {
+      // リクエスト完了時に記録から削除
+      this.pendingRequests.delete(cacheKey);
+    }
   }
 
-  // 全キャッシュをクリア
-  clearAll() {
-    this.cache.clear();
-    this.pendingRequests.clear();
+  // API関数を取得
+  getAPIFunction(functionName) {
+    // 実際のAPI関数を返す（GasAPIから動的に取得）
+    if (typeof window !== 'undefined' && window.GasAPI) {
+      return window.GasAPI[functionName] || window.GasAPI._callApi.bind(window.GasAPI, functionName);
+    }
+    
+    // フォールバック
+    return async (...params) => {
+      throw new Error(`API function ${functionName} not found`);
+    };
+  }
+
+  // バッチAPI呼び出し（複数のAPIを同時実行）
+  async batchCallAPI(requests) {
+    const promises = requests.map(request => 
+      this.callAPI(request.functionName, request.params, request.useCache !== false)
+    );
+    
+    const results = await Promise.allSettled(promises);
+    
+    return results.map((result, index) => ({
+      request: requests[index],
+      success: result.status === 'fulfilled',
+      data: result.status === 'fulfilled' ? result.value : null,
+      error: result.status === 'rejected' ? result.reason : null
+    }));
   }
 
   // キャッシュ統計を取得
-  getStats() {
+  getCacheStats() {
+    const now = Date.now();
+    let validEntries = 0;
+    let expiredEntries = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.cacheTimeout) {
+        expiredEntries++;
+      } else {
+        validEntries++;
+      }
+    }
+    
     return {
-      cacheSize: this.cache.size,
-      pendingRequests: this.pendingRequests.size,
-      cacheKeys: Array.from(this.cache.keys())
+      totalEntries: this.cache.size,
+      validEntries,
+      expiredEntries,
+      activeRequests: this.activeRequests,
+      queuedRequests: this.requestQueue.length,
+      pendingRequests: this.pendingRequests.size
+    };
+  }
+
+  // キャッシュをクリア
+  clearCache() {
+    this.cache.clear();
+    debugLog('[APICache] キャッシュクリア');
+  }
+
+  // 特定のキーのキャッシュを削除
+  deleteCacheKey(key) {
+    this.cache.delete(key);
+    debugLog('[APICache] キャッシュキー削除', { key });
+  }
+
+  // パフォーマンス統計を取得
+  getPerformanceStats() {
+    return {
+      cacheStats: this.getCacheStats(),
+      config: {
+        maxConcurrentRequests: this.maxConcurrentRequests,
+        cacheTimeout: this.cacheTimeout,
+        retryAttempts: this.retryAttempts,
+        retryDelay: this.retryDelay
+      }
     };
   }
 }
 
 // グローバルインスタンス
-window.apiCache = new APICache();
+const apiCache = new APICache();
 
-export default window.apiCache;
+// グローバル関数として公開
+if (typeof window !== 'undefined') {
+  window.APICache = apiCache;
+}
+
+export default apiCache;

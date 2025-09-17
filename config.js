@@ -20,6 +20,18 @@ const FULL_CAPACITY_NOTIFICATION_EMAILS = [
   'nzn.engeki5@gmail.com'
 ];
 
+// 強化監視システム設定
+const ENHANCED_MONITORING_CONFIG = {
+  defaultCheckInterval: 15000, // 15秒間隔
+  defaultWarningThreshold: 5,  // 5席以下で警告
+  defaultCriticalThreshold: 2, // 2席以下で緊急
+  defaultNotificationCooldown: 300000, // 5分間のクールダウン
+  maxConcurrentChecks: 5, // 同時チェック数の上限
+  cacheTimeout: 30000, // 30秒間のキャッシュ
+  retryAttempts: 3, // リトライ回数
+  retryDelay: 1000 // リトライ間隔（ミリ秒）
+};
+
 // URL選択とローテーション管理
 class APIUrlManager {
   constructor() {
@@ -281,4 +293,4 @@ function debugLog(message, obj = null) {
 
 // 個別にエクスポート
 export { GAS_API_URLS, BACKGROUND_SYNC_URL, DEBUG_MODE, debugLog, apiUrlManager, DemoMode };
-export { FEATURE_FLAGS };
+export { FEATURE_FLAGS, FULL_CAPACITY_NOTIFICATION_EMAILS, ENHANCED_MONITORING_CONFIG };
