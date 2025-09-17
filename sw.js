@@ -270,6 +270,20 @@ self.addEventListener('message', (event) => {
 			}
 		})());
 	}
+
+	// 管理者モードの確認
+	if (event.data && event.data.type === 'CHECK_ADMIN_MODE') {
+		const clientId = (event.source && event.source.id) || (event.clientId) || null;
+		const isAdmin = clientId && SUPERADMIN_CLIENT_IDS.has(clientId);
+		
+		// クライアントに管理者モードの状態を返信
+		if (event.source) {
+			event.source.postMessage({
+				type: 'ADMIN_MODE_STATUS',
+				isAdmin: isAdmin
+			});
+		}
+	}
 });
 
 // 満席通知を送信

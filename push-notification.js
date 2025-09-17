@@ -37,18 +37,46 @@ class PushNotificationManager {
 
             // UIの初期化
             this.initializeUI();
+
+            // Service Workerからのメッセージを監視
+            this.setupServiceWorkerMessageListener();
         } catch (error) {
             console.error('初期化エラー:', error);
         }
     }
 
+    // Service Workerからのメッセージを監視
+    setupServiceWorkerMessageListener() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'ADMIN_MODE_STATUS') {
+                    this.handleAdminModeStatus(event.data.isAdmin);
+                }
+            });
+        }
+    }
+
+    // 管理者モード状態の処理
+    handleAdminModeStatus(isAdmin) {
+        if (isAdmin) {
+            // 管理者モードが有効な場合、通知コンテナを表示
+            const container = document.getElementById('push-notification-container');
+            if (container) {
+                container.style.display = 'block';
+            }
+        } else {
+            // 管理者モードが無効な場合、通知コンテナを非表示
+            const container = document.getElementById('push-notification-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+    }
+
     // UIの初期化
     initializeUI() {
-        // 通知コンテナを表示
-        const container = document.getElementById('push-notification-container');
-        if (container) {
-            container.style.display = 'block';
-        }
+        // 通知コンテナを表示（管理者モードでのみ）
+        this.updateNotificationContainerVisibility();
 
         // ボタンのイベントリスナーを設定
         const enableBtn = document.getElementById('enable-push-btn');
@@ -68,6 +96,86 @@ class PushNotificationManager {
 
         // 初期状態を設定
         this.updateNotificationUI(this.isSubscribed);
+
+        // 管理者モードの変更を監視
+        this.startAdminModeMonitoring();
+    }
+
+    // 管理者モードの監視を開始
+    startAdminModeMonitoring() {
+        // 定期的に管理者モードの状態をチェック
+        this.adminModeInterval = setInterval(() => {
+            this.updateNotificationContainerVisibility();
+        }, 1000);
+
+        // 管理者モードの変更イベントを監視
+        this.setupAdminModeEventListeners();
+    }
+
+    // 管理者モードの変更イベントを監視
+    setupAdminModeEventListeners() {
+        // localStorageの変更を監視
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'isSuperAdmin') {
+                this.updateNotificationContainerVisibility();
+            }
+        });
+
+        // グローバル変数の変更を監視
+        let lastAdminState = window.isSuperAdmin;
+        setInterval(() => {
+            if (window.isSuperAdmin !== lastAdminState) {
+                lastAdminState = window.isSuperAdmin;
+                this.updateNotificationContainerVisibility();
+            }
+        }, 500);
+    }
+
+    // 通知コンテナの表示/非表示を更新
+    updateNotificationContainerVisibility() {
+        const container = document.getElementById('push-notification-container');
+        if (!container) return;
+
+        // 管理者モードかどうかをチェック
+        const isAdminMode = this.checkAdminMode();
+        
+        if (isAdminMode) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // 管理者モードかどうかをチェック
+    checkAdminMode() {
+        // 複数の方法で管理者モードをチェック
+        if (typeof window !== 'undefined') {
+            // 1. グローバル変数でチェック
+            if (window.isSuperAdmin === true) {
+                return true;
+            }
+
+            // 2. localStorageでチェック
+            if (localStorage.getItem('isSuperAdmin') === 'true') {
+                return true;
+            }
+
+            // 3. URLパラメータでチェック
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('admin') === 'true') {
+                return true;
+            }
+
+            // 4. Service Workerの管理者クライアントIDでチェック
+            if (this.swRegistration && this.swRegistration.active) {
+                // Service Workerに管理者モードの確認を送信
+                this.swRegistration.active.postMessage({
+                    type: 'CHECK_ADMIN_MODE'
+                });
+            }
+        }
+
+        return false;
     }
 
     // VAPID公開キーをサーバーから取得
@@ -775,6 +883,10 @@ class PushNotificationManager {
                 this.updateNotificationUI(true);
                 // 満席通知の自動監視を開始
                 this.startFullAlertMonitoring();
+                // 自動でテスト送信を実行
+                setTimeout(() => {
+                    this.sendTestNotification();
+                }, 2000); // 2秒後にテスト送信
             }
             return result;
         }
@@ -790,6 +902,10 @@ class PushNotificationManager {
             this.updateNotificationUI(true);
             // 満席通知の自動監視を開始
             this.startFullAlertMonitoring();
+            // 自動でテスト送信を実行
+            setTimeout(() => {
+                this.sendTestNotification();
+            }, 2000); // 2秒後にテスト送信
         }
         return subscribed;
     }
