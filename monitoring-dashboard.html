@@ -529,6 +529,15 @@
                     <span class="status-indicator" id="monitoring-status-indicator">停止中</span>
                 </div>
             </div>
+
+            <!-- GAS URL 情報とローテーション操作 -->
+            <div id="api-url-panel" style="margin-bottom:12px;background:#f8f9fa;border:1px solid #e1e5e9;border-radius:8px;padding:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <span style="font-weight:600;color:#333;">接続先GAS:</span>
+                <span id="api-url-label" style="font-family:monospace;font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:540px;">--</span>
+                <span id="api-url-meta" style="font-size:12px;color:#666;">(--)</span>
+                <button id="api-url-refresh" class="btn btn-secondary" style="padding:6px 10px;">更新</button>
+                <button id="api-url-random" class="btn btn-secondary" style="padding:6px 10px;">ランダム切替</button>
+            </div>
             
             <div class="controls-grid">
                 <div class="control-group">
@@ -646,10 +655,12 @@
                 this.nextEmailCheckAt = 0;
                 this.lastEmailSignature = '';
                 this.latestTimeslotMap = new Map();
+                this.urlRotationInterval = null;
                 
                 this.initializeElements();
                 this.bindEvents();
                 this.loadInitialData();
+                this.startUrlAutoRotation();
             }
 
             initializeElements() {
@@ -669,7 +680,11 @@
                     errorContainer: document.getElementById('error-container'),
                     successContainer: document.getElementById('success-container'),
                     errorMessage: document.getElementById('error-message'),
-                    successMessage: document.getElementById('success-message')
+                    successMessage: document.getElementById('success-message'),
+                    apiUrlLabel: document.getElementById('api-url-label'),
+                    apiUrlMeta: document.getElementById('api-url-meta'),
+                    apiUrlRefresh: document.getElementById('api-url-refresh'),
+                    apiUrlRandom: document.getElementById('api-url-random')
                 };
             }
 
@@ -701,6 +716,15 @@
                 if (criticalCard) criticalCard.addEventListener('click', () => this.showStatusListModal('critical'));
                 if (warningCard) warningCard.addEventListener('click', () => this.showStatusListModal('warning'));
                 if (normalCard) normalCard.addEventListener('click', () => this.showStatusListModal('normal'));
+
+                // GAS URL 情報
+                this.elements.apiUrlRefresh.addEventListener('click', () => this.refreshUrlInfo());
+                this.elements.apiUrlRandom.addEventListener('click', async () => {
+                    try { await GasAPI.selectRandomUrl(); } catch (_) {}
+                    await this.refreshUrlInfo();
+                });
+                // 初期表示
+                this.refreshUrlInfo();
             }
 
             async loadInitialData() {
@@ -1160,6 +1184,36 @@
                 this.updateStatusIndicators();
                 this.updateStatistics();
                 this.updateTimeslotsGrid();
+                // URL情報も定期的に更新
+                this.refreshUrlInfo(false);
+            }
+
+            async refreshUrlInfo(force = true) {
+                try {
+                    // たびたび呼ばれるため、失敗してもUIは壊さない
+                    const info = await GasAPI.getUrlManagerInfo();
+                    if (!info || !this.elements.apiUrlLabel || !this.elements.apiUrlMeta) return;
+                    this.elements.apiUrlLabel.textContent = info.url || '(不明)';
+                    this.elements.apiUrlMeta.textContent = `(${info.index || '?'} / ${info.total || '?'}) 最終ローテーション: ${info.lastRotation || '-'}`;
+                    if (force) {
+                        this.showSuccess('GAS接続先情報を更新しました');
+                    }
+                } catch (_) {
+                    // noop
+                }
+            }
+
+            startUrlAutoRotation() {
+                try {
+                    if (this.urlRotationInterval) return;
+                    const ROTATE_MS = 10 * 60 * 1000; // 10分
+                    this.urlRotationInterval = setInterval(async () => {
+                        try {
+                            await GasAPI.selectRandomUrl();
+                            await this.refreshUrlInfo(false);
+                        } catch (_) {}
+                    }, ROTATE_MS);
+                } catch (_) {}
             }
 
             notifyNewClasses(data) {

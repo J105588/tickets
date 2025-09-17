@@ -2,9 +2,17 @@
 // 複数のAPI URL（使用数上限回避のため分散）
 const GAS_API_URLS = [
   //jxjin2010@gmail.com
-  "https://script.google.com/macros/s/AKfycbxl6GhZXb8TrC4ok_MaS-KB19wXF03VR6b3EDX3MV8HOmFUzEYWpB2N53yoeUyUxsEz/exec"
+  "https://script.google.com/macros/s/AKfycbxl6GhZXb8TrC4ok_MaS-KB19wXF03VR6b3EDX3MV8HOmFUzEYWpB2N53yoeUyUxsEz/exec",
   //jxjin.ig.school@gmail.com
-  //"https://script.google.com/macros/s/AKfycbzNCNFL54482qdTTwT4i9X_dnVCIKirZ3zpsuuS2UwwxcGA8wkcjDuhJP5Q_q4Hbvsu/exec"
+  "https://script.google.com/macros/s/AKfycbxMxkhZDI9gkXPWsQ9gQigFIhr2M3iiXE1S1K7my5ozqMID_xdVHbJiXjffsMhsLgH1/exec",
+  //nzn.engeki5@gmail.com
+  "https://script.google.com/macros/s/AKfycbyltPeZae9iD9H61aZxsD6sM5Pce526ZHgi4OPR12BNLm36JrRUQsXDvDgvvCqtnbyR-w/exec",
+  //nzn.engeki5.b@gmail.com
+  "https://script.google.com/macros/s/AKfycbxt7c9FdbmRqerVhQ0e8raIPUNlX-N0xo3l8-40XgXerDpkdWBJzoePFGcuOZnbQZ62/exec",
+  //info.engeki5@gmail.com
+  "https://script.google.com/macros/s/AKfycbz98t8trLuHvpQLCGnIKS7aQX5pRHncbZWLa0K4d9REArnWhNHfQRwzhh-6KKnLjZH2Sw/exec",
+  //engeki.enjitsu@gmail.com
+  "https://script.google.com/macros/s/AKfycbz0gcsEHWPSsoM_tQaGJCHO6ga9Qzu2by81EYA4QRPww8m4QsrSQZ8dZ3WMZoga_yqx/exec"
 ];
 
 // ログ記録用スプレッドシートID

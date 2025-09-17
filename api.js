@@ -500,7 +500,39 @@ class GasAPI {
         return resp;
       };
 
-      const response = await this._retryWithBackoff(task, shouldRetry, { retries: 3, baseDelayMs: 500, maxDelayMs: 3000, jitter: true });
+      let response;
+      try {
+        response = await this._retryWithBackoff(task, shouldRetry, { retries: 3, baseDelayMs: 500, maxDelayMs: 3000, jitter: true });
+      } catch (primaryErr) {
+        // バッチ送信失敗 → 個別送信にフォールバック
+        const results = [];
+        let delivered = 0;
+        let failed = 0;
+        for (const addr of merged) {
+          const singlePayload = { ...payload, emails: [addr] };
+          const perTask = async () => {
+            const r = await this._callApi('sendStatusNotificationEmail', [singlePayload], { timeoutMs: null });
+            if (!r || r.success === false) {
+              const em = (r && (r.error || r.message)) || 'メール送信に失敗しました';
+              throw new Error(em);
+            }
+            return r;
+          };
+          try {
+            await this._retryWithBackoff(perTask, shouldRetry, { retries: 2, baseDelayMs: 400, maxDelayMs: 2000, jitter: true });
+            delivered++;
+            results.push({ email: addr, success: true });
+          } catch (perErr) {
+            failed++;
+            results.push({ email: addr, success: false, error: perErr && perErr.message });
+          }
+        }
+        const partial = { success: delivered > 0, delivered, failed, results };
+        if (!partial.success) {
+          throw new Error(`${delivered}件のメールを送信しました (${failed}件失敗)`);
+        }
+        response = partial;
+      }
       // 件名/本文が提供されていない場合のフォールバック（GAS側テンプレ依存を避ける）
       try {
         if (payload && (!payload.subject || !payload.body)) {
