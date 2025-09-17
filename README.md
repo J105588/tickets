@@ -1,6 +1,27 @@
-# チケット管理システム
+# チケット管理システム v2.3
 
-文化祭やイベント向けの座席予約・チェックイン・当日券発行・最高管理者機能を行うシンプルな Web クライアントと、Google Apps Script（GAS）で構築されたバックエンドからなるシステムです。静的ホスティング可能なフロントエンド（HTML/CSS/JS）と、スプレッドシートをバックエンドとして使う運用に最適です。
+文化祭やイベント向けの座席予約・チェックイン・当日券発行・最高管理者機能を行う高度なWebアプリケーションシステムです。静的ホスティング可能なフロントエンド（HTML/CSS/JS）と、Google Apps Script（GAS）で構築されたバックエンドからなり、完全オフライン動作、PWA更新通知、強化監視システム、URL分散管理などの先進機能を搭載しています。
+
+## 🆕 最新機能（v2.3）
+
+### PWA更新通知システム
+- **自動更新検知**: Service Workerが新しいデプロイを自動検知
+- **美しい通知UI**: グラデーション背景のモダンな更新通知
+- **ワンクリック更新**: 「今すぐ更新」ボタンで即座に最新版に更新
+- **定期チェック**: 5分間隔での自動更新チェック
+- **監査ログ**: 更新通知の表示・適用・却下を詳細記録
+
+### 強化座席監視システム
+- **リアルタイム監視**: 15秒間隔で全公演の座席状況を監視
+- **インテリジェント通知**: 容量レベル別の優先度通知システム
+- **監視ダッシュボード**: リアルタイム表示と統計情報
+- **重複防止**: クールダウン機能で重複通知を防止
+
+### パフォーマンス最適化システム（v2.2）
+- **OptimizedLoader**: 依存関係を考慮した並列モジュール読み込み
+- **APICache**: インテリジェントキャッシュシステム
+- **UIOptimizer**: イベント処理とレンダリングの最適化
+- **PerformanceMonitor**: リアルタイムパフォーマンス監視
 
 ## 📋 目次
 
@@ -73,72 +94,227 @@
 
 ## 🏗️ システム構成
 
-### フロントエンド（v2.2最適化版）
-- 静的ファイル群（HTML/CSS/ES Modules）。ビルド不要。
-- モジュラー設計で機能別にファイルを分割
-- レスポンシブデザイン対応
-- **OptimizedLoader**：依存関係を考慮した並列モジュール読み込み
-- **APICache**：インテリジェントキャッシュシステム
-- **UIOptimizer**：イベント処理とレンダリングの最適化
-- **PerformanceMonitor**：リアルタイムパフォーマンス監視
+### フロントエンド（v2.3最適化版）
+- **静的ファイル群**（HTML/CSS/ES Modules）。ビルド不要。
+- **モジュラー設計**で機能別にファイルを分割
+- **レスポンシブデザイン**対応
+- **PWA対応**：Service Worker、マニフェスト、オフライン動作
+- **最適化システム**：
+  - **OptimizedLoader**：依存関係を考慮した並列モジュール読み込み
+  - **APICache**：インテリジェントキャッシュシステム
+  - **UIOptimizer**：イベント処理とレンダリングの最適化
+  - **PerformanceMonitor**：リアルタイムパフォーマンス監視
 - **オフライン同期システム（v2.0）**：完全オフライン動作を実現
+- **強化監視システム**：リアルタイム座席状況監視と通知
 
-### バックエンド
-- GAS を JSONP で呼び出し（`optimized-api.js`）
-- CORS を回避しつつ、`callback` で応答を受け取ります
+### バックエンド（Google Apps Script）
+- **API ルーター**：`doGet`/`doPost`によるJSONP通信処理
+- **座席管理**：座席データ取得、予約、チェックイン機能
+- **当日券機能**：空席自動割当、連続席確保
+- **最高管理者機能**：座席データ直接編集
+- **認証システム**：モード別パスワード認証
+- **ログシステム**：操作監査とエラーログ
+- **通知システム**：満席通知とステータス監視
+
+### 通信層（最適化）
+- **OptimizedGasAPI**：キャッシュ対応のAPI呼び出し
 - **URL管理システム**：複数API URLの自動管理とローテーション
 - **フェイルオーバー機能**：API呼び出し失敗時の自動切り替え
 - **オフライン委譲機能**：オフライン時の操作をローカル処理に委譲
 - **キャッシュ統合**：API呼び出しの重複排除と最適化
 
 ### データストア
-- Google スプレッドシート
-- `SpreadsheetIds.gs` で対象スプレッドシートを公演別に切替
-- 最高管理者モードでは座席データの直接編集が可能
-- **ローカルキャッシュ**：座席データのオフライン保存と同期
+- **Google スプレッドシート**：座席データ、ログデータ
+- **ローカルストレージ**：オフラインキャッシュ、操作キュー
+- **Service Worker キャッシュ**：静的アセットのオフライン保存
+- **メモリキャッシュ**：リアルタイムデータの高速アクセス
 
-### オフライン対応アーキテクチャ（v2.2最適化版）
+### システム全体アーキテクチャ（v2.3）
 ```mermaid
 graph TB
-  subgraph "最適化フロントエンド"
+  subgraph "フロントエンド層"
     A[OptimizedLoader]
-    B[OfflineSyncV2]
-    C[Service Worker v2]
-    D[APICache]
-    E[Local Storage]
+    B[HTML Pages]
+    C[CSS Files]
+    D[JavaScript Modules]
+    E[Service Worker v2.3]
   end
   
-  subgraph "通信層（最適化）"
-    F[OptimizedGasAPI]
-    G[URL管理システム]
-    H[オフライン委譲]
-    I[自動同期（15秒間隔）]
+  subgraph "最適化システム"
+    F[APICache]
+    G[UIOptimizer]
+    H[PerformanceMonitor]
+    I[OfflineSyncV2]
   end
   
-  subgraph "バックエンド"
-    J[GAS Web App]
-    K[API ルーター]
-    L[ビジネスロジック]
+  subgraph "通信・API層"
+    J[OptimizedGasAPI]
+    K[URL管理システム]
+    L[フェイルオーバー]
+    M[オフライン委譲]
+  end
+  
+  subgraph "監視・通知システム"
+    N[EnhancedStatusMonitor]
+    O[MonitoringDashboard]
+    P[PWA更新通知]
+    Q[監査ログ]
+  end
+  
+  subgraph "バックエンド（GAS）"
+    R[Code.gs - API Router]
+    S[SpreadsheetIds.gs]
+    T[TimeSlotConfig.gs]
+    U[system-setting.gs]
   end
   
   subgraph "データストア"
-    M[Google Spreadsheet]
-    N[座席データ]
-    O[ログデータ]
+    V[Google Spreadsheet]
+    W[Local Storage]
+    X[Service Worker Cache]
+    Y[Memory Cache]
+  end
+  
+  A --> F
+  A --> G
+  A --> H
+  A --> I
+  F --> J
+  G --> A
+  H --> A
+  I --> J
+  J --> K
+  J --> L
+  J --> M
+  K --> R
+  L --> R
+  M --> I
+  N --> J
+  O --> N
+  P --> E
+  Q --> J
+  R --> S
+  R --> T
+  R --> U
+  R --> V
+  I --> W
+  E --> X
+  F --> Y
+```
+
+### 依存関係図（v2.3詳細版）
+```mermaid
+graph TD
+  subgraph "最適化層"
+    A[optimized-loader.js]
+    B[api-cache.js]
+    C[optimized-api.js]
+    D[ui-optimizer.js]
+    E[performance-monitor.js]
+  end
+  
+  subgraph "設定・共通"
+    F[config.js]
+    G[styles.css]
+    H[error-handler.js]
+  end
+  
+  subgraph "オフライン同期"
+    I[offline-sync-v2.js]
+    J[offline-sync-v2.css]
+    K[sw.js]
+  end
+  
+  subgraph "監視・通知"
+    L[enhanced-status-monitor.js]
+    M[monitoring-dashboard.html]
+    N[pwa-update.js]
+  end
+  
+  subgraph "UI層"
+    O[sidebar.js]
+    P[sidebar.css]
+    Q[pwa-install.js]
+  end
+  
+  subgraph "ページ別JS"
+    R[index-main.js]
+    S[timeslot-main.js]
+    T[seats-main.js]
+    U[walkin-main.js]
+    V[logs-main.js]
+  end
+  
+  subgraph "ページ別CSS"
+    W[seats.css]
+    X[walkin.css]
+    Y[logs.css]
+  end
+  
+  subgraph "ページ別HTML"
+    Z[index.html]
+    AA[timeslot.html]
+    BB[seats.html]
+    CC[walkin.html]
+    DD[logs.html]
   end
   
   A --> B
+  A --> C
   A --> D
+  A --> E
+  A --> F
+  A --> I
+  A --> O
   B --> C
-  B --> E
-  D --> F
-  F --> G
-  F --> H
-  H --> B
-  F --> J
-  J --> M
-  B --> I
-  I --> J
+  C --> O
+  C --> I
+  D --> A
+  E --> A
+  F --> C
+  H --> O
+  I --> R
+  I --> S
+  I --> T
+  I --> U
+  I --> V
+  L --> C
+  M --> L
+  N --> A
+  O --> R
+  O --> S
+  O --> T
+  O --> U
+  O --> V
+  G --> P
+  G --> W
+  G --> X
+  G --> I
+  P --> Z
+  P --> AA
+  P --> BB
+  P --> CC
+  P --> DD
+  Q --> Z
+  Q --> AA
+  Q --> BB
+  Q --> CC
+  I --> Z
+  I --> AA
+  I --> BB
+  I --> CC
+  R --> Z
+  S --> AA
+  T --> BB
+  U --> CC
+  V --> DD
+  W --> BB
+  X --> CC
+  K -.-> Z
+  K -.-> AA
+  K -.-> BB
+  K -.-> CC
+  K -.-> DD
 ```
 
 ---
@@ -563,6 +739,105 @@ sequenceDiagram
 
 ---
 
+## 🔍 強化座席監視システム（v2.3）
+
+### 概要
+リアルタイムで全公演の座席状況を監視し、容量レベルに応じたインテリジェント通知システムを提供する高度な監視システムです。
+
+### 主要機能
+
+#### 1. リアルタイム監視
+- **頻繁なチェック**: デフォルト15秒間隔で全公演の座席状況を監視
+- **状態変化検知**: 前回の状態と比較して変化を検出
+- **容量レベル判定**: 正常・警告・緊急・満席の4段階で分類
+
+#### 2. インテリジェント通知システム
+- **優先度別通知**: 高・中・低の3段階で通知優先度を設定
+- **重複防止**: クールダウン機能で同じ公演への重複通知を防止
+- **詳細レポート**: 統計情報とトレンド分析を含む包括的なメール通知
+
+#### 3. パフォーマンス最適化
+- **APIキャッシュ**: 頻繁なAPI呼び出しを最適化
+- **並列処理**: 複数のリクエストを同時実行
+- **リトライ機能**: 失敗時の自動リトライ
+
+#### 4. 監視ダッシュボード
+- **リアルタイム表示**: 現在の座席状況を視覚的に表示
+- **統計情報**: システムの動作状況とパフォーマンス指標
+- **設定管理**: 監視間隔や閾値の動的変更
+
+### 容量レベル
+
+| レベル | 条件 | 色 | 説明 |
+|--------|------|-----|------|
+| 正常 | 6席以上 | 緑 | 十分な空席がある |
+| 警告 | 3-5席 | 黄 | 空席が少なくなってきた |
+| 緊急 | 1-2席 | オレンジ | 空席が非常に少ない |
+| 満席 | 0席 | 赤 | 空席がない |
+
+### 通知優先度
+
+| 優先度 | 条件 | 説明 |
+|--------|------|------|
+| 高 | 満席になった | 即座に通知が必要 |
+| 中 | 緊急レベルに変化 | 注意が必要 |
+| 低 | 警告レベルに変化 | 参考情報 |
+
+### 使用方法
+
+#### 1. 基本的な監視開始
+```javascript
+import enhancedStatusMonitor from './enhanced-status-monitor.js';
+
+// 監視開始
+enhancedStatusMonitor.start();
+
+// 監視停止
+enhancedStatusMonitor.stop();
+```
+
+#### 2. 設定の変更
+```javascript
+// 監視間隔を変更（30秒間隔）
+enhancedStatusMonitor.setCheckInterval(30000);
+
+// 容量閾値を変更
+enhancedStatusMonitor.updateCapacityThresholds({
+  warning: 3,    // 3席以下で警告
+  critical: 1,   // 1席以下で緊急
+  full: 0        // 0席で満席
+});
+
+// 通知クールダウンを変更（10分間）
+enhancedStatusMonitor.setNotificationCooldown(600000);
+```
+
+#### 3. 統計情報の取得
+```javascript
+const stats = enhancedStatusMonitor.getStatistics();
+console.log('総チェック回数:', stats.totalChecks);
+console.log('総通知回数:', stats.totalNotifications);
+console.log('平均空席数:', stats.averageEmptySeats);
+console.log('パフォーマンス統計:', stats.performanceStats);
+```
+
+### 監視ダッシュボード
+`monitoring-dashboard.html`を開くことで、以下の機能を利用できます：
+
+#### リアルタイム表示
+- 各公演の現在の座席状況
+- 容量レベル別の公演数
+- システム統計情報
+
+#### 監視制御
+- 監視の開始・停止
+- 設定の動的変更
+- 手動チェック実行
+
+#### 通知履歴
+- 過去の通知履歴表示
+- 通知履歴のクリア
+
 ## 🆕 監視・通知・URL・通信の最新仕様（ダッシュボード強化）
 
 ### ダッシュボード更新ポリシー（UI保持・バックグラウンド更新）
@@ -878,42 +1153,57 @@ graph TD
 #### メインページ
 - **`index.html`**: 組選択ページのメインHTML
   - サイドバーコンテナ、組選択UI、基本レイアウト
-  - 依存: `styles.css`, `sidebar.css`, `config.js`, `api.js`, `sidebar.js`, `index-main.js`
+  - PWA更新通知機能、URL管理システム情報表示
+  - 依存: `styles.css`, `sidebar.css`, `config.js`, `optimized-loader.js`, `index-main.js`
 - **`index-main.js`**: 組選択ページのメインロジック
   - 組一覧の表示、選択時のナビゲーション処理
-  - 依存: `config.js`, `api.js`, `sidebar.js`
+  - 依存: `config.js`, `optimized-api.js`, `sidebar.js`
 
 - **`timeslot.html`**: 時間帯選択ページのメインHTML
   - 時間帯選択UI、ナビゲーション要素
-  - 依存: `styles.css`, `sidebar.css`, `config.js`, `api.js`, `sidebar.js`, `timeslot-main.js`
+  - 依存: `styles.css`, `sidebar.css`, `config.js`, `optimized-loader.js`, `timeslot-main.js`
 - **`timeslot-main.js`**: 時間帯選択ページのメインロジック
   - 時間帯一覧の表示、選択時のページ遷移処理
-  - 依存: `config.js`, `api.js`, `sidebar.js`, `timeslot-schedules.js`
+  - 依存: `config.js`, `optimized-api.js`, `sidebar.js`, `timeslot-schedules.js`
 - **`timeslot-schedules.js`**: 時間帯スケジュール定義
   - 各組の時間帯データ（フロントエンド固定）
   - 依存: なし（独立したデータファイル）
 
 - **`seats.html`**: 座席選択・予約ページのメインHTML
   - 座席マップ表示エリア、操作ボタン、自動更新設定UI
-  - 依存: `styles.css`, `sidebar.css`, `seats.css`, `config.js`, `api.js`, `sidebar.js`, `seats-main.js`
+  - 依存: `styles.css`, `sidebar.css`, `seats.css`, `config.js`, `optimized-loader.js`, `seats-main.js`
 - **`seats-main.js`**: 座席選択・予約ページのメインロジック
   - 座席マップ描画、予約処理、チェックイン処理、最高管理者編集機能
   - 自動更新機能、楽観的更新、エラーハンドリング
-  - 依存: `config.js`, `api.js`, `sidebar.js`, `seats.css`
+  - 依存: `config.js`, `optimized-api.js`, `sidebar.js`, `seats.css`, `ui-optimizer.js`
 - **`seats.css`**: 座席選択ページ専用スタイル
   - 座席マップレイアウト、座席状態別色分け、モーダル、自動更新設定UI
   - 依存: `styles.css`（基本スタイル継承）
 
 - **`walkin.html`**: 当日券発行ページのメインHTML
   - 当日券発行UI、枚数選択、発行方法選択モーダル
-  - 依存: `styles.css`, `sidebar.css`, `walkin.css`, `config.js`, `api.js`, `sidebar.js`, `walkin-main.js`
+  - 依存: `styles.css`, `sidebar.css`, `walkin.css`, `config.js`, `optimized-loader.js`, `walkin-main.js`
 - **`walkin-main.js`**: 当日券発行ページのメインロジック
   - 当日券発行処理、枚数選択、連続席/ランダム選択機能
   - アクセス制限、エラーハンドリング
-  - 依存: `config.js`, `api.js`, `sidebar.js`, `walkin.css`
+  - 依存: `config.js`, `optimized-api.js`, `sidebar.js`, `walkin.css`
 - **`walkin.css`**: 当日券ページ専用スタイル
   - 当日券UI、枚数選択、通知、モーダルスタイル
   - 依存: `styles.css`（基本スタイル継承）
+
+- **`logs.html`**: 操作ログ表示ページのメインHTML
+  - ログ一覧表示、統計情報、フィルタリング機能
+  - 依存: `styles.css`, `sidebar.css`, `logs.css`, `config.js`, `optimized-loader.js`, `logs-main.js`
+- **`logs-main.js`**: 操作ログ表示ページのメインロジック
+  - ログデータ取得、表示、フィルタリング処理
+  - 依存: `config.js`, `optimized-api.js`, `sidebar.js`, `logs.css`
+- **`logs.css`**: ログページ専用スタイル
+  - ログ表示レイアウト、テーブルスタイル、フィルタUI
+  - 依存: `styles.css`（基本スタイル継承）
+
+- **`monitoring-dashboard.html`**: 強化監視ダッシュボード
+  - リアルタイム座席状況表示、統計情報、監視制御
+  - 依存: `styles.css`, `config.js`, `enhanced-status-monitor.js`
 
 #### 最適化・共通ファイル
 - **`optimized-loader.js`**: 最適化されたスクリプトローダー
@@ -941,10 +1231,20 @@ graph TD
   - ダッシュボード表示（Ctrl+Shift+P）
   - メモリ使用量監視
   - 依存: なし（独立）
+- **`enhanced-status-monitor.js`**: 強化座席監視システム
+  - リアルタイム座席状況監視
+  - インテリジェント通知システム
+  - 容量レベル判定と統計情報
+  - 依存: `optimized-api.js`, `api-cache.js`, `config.js`
+- **`audit-logger.js`**: 監査ログシステム
+  - クライアント操作の監査ログ記録
+  - バッチ送信とエラーハンドリング
+  - 依存: `optimized-api.js`
 - **`config.js`**: システム設定とURL管理機能
   - GAS API URL配列、URL管理システム（APIUrlManager）
   - デバッグモード設定、デバッグログ機能
   - 自動ローテーション、フェイルオーバー機能
+  - DEMOモード管理、強化監視設定
   - 依存: なし（他のファイルから参照される）
 - **`styles.css`**: 全体共通スタイル
   - 基本レイアウト、ボタン、フォーム、モーダル、レスポンシブ対応
@@ -952,7 +1252,7 @@ graph TD
 - **`sidebar.js`**: サイドバーとモード管理機能
   - サイドバー表示制御、モード切替UI、パスワード認証
   - ナビゲーション制御、GAS疎通テスト
-  - 依存: `optimized-api.js`
+  - 依存: `optimized-api.js`, `audit-logger.js`
 - **`sidebar.css`**: サイドバー専用スタイル
   - サイドバーレイアウト、モード切替モーダル、ナビゲーション
   - 依存: `styles.css`（基本スタイル継承）
@@ -968,6 +1268,9 @@ graph TD
   - 自動更新検知、更新通知UI、ワンクリック更新機能
   - 定期チェック（5分間隔）、監査ログ記録
   - 依存: なし（独立）
+- **`pwa-install.js`**: PWAインストール促進機能
+  - インストールプロンプト表示、インストール状態管理
+  - 依存: なし（独立）
 
 #### オフライン同期システム
 - **`offline-sync-v2.js`**: オフライン同期システム（v2.0最適化版）
@@ -982,6 +1285,15 @@ graph TD
   - 段階的キャッシュ（クリティカル6個→セカンダリ20個）
   - メモリ圧迫防止（バッチサイズ3個、100ms待機）
   - iOS対応最適化、PWA更新検知機能
+  - 自己修復機能、最高管理者通知機能
+  - 依存: なし（独立）
+
+#### PWA関連ファイル
+- **`manifest.json`**: PWAマニフェスト
+  - アプリケーション情報、アイコン、ショートカット定義
+  - 依存: なし（独立）
+- **`browserconfig.xml`**: ブラウザ設定
+  - Windows/IE用のブラウザ設定
   - 依存: なし（独立）
 
 ### 🔧 バックエンド（Google Apps Script）
@@ -999,6 +1311,8 @@ graph TD
   - **危険コマンド**: `execDangerCommand` - コンソール専用危険操作
   - **テスト機能**: `testApi` - 全機能疎通テスト
   - **エラー処理**: `reportError` - クライアントエラー報告
+  - **ログシステム**: `getOperationLogs`, `getLogStatistics`, `recordClientAudit` - 監査ログ
+  - **監視システム**: `getDetailedCapacityAnalysis`, `sendStatusNotificationEmail` - 強化監視
   - **ヘルパー関数**: `isValidSeatId`, `getSheet` - 共通処理
   - 依存: `TimeSlotConfig.gs`, `SpreadsheetIds.gs`
 
@@ -1030,7 +1344,7 @@ graph TD
   - メインシステムと同期した時間帯データ
   - 依存: なし（OfflineCode.gsから参照される）
 
-### 📊 ファイルサイズ情報
+### 📊 ファイルサイズ情報（v2.3）
 
 | ファイル | サイズ (行) | 説明 |
 |----------|-------------|------|
@@ -1038,38 +1352,52 @@ graph TD
 | **CNAME** | 0 | カスタムドメイン設定 |
 | **Code.gs** | 1,240 | メインAPI処理とビジネスロジック |
 | **LICENSE** | 21 | ライセンス情報 |
-| **OFFLINE_SYNC_README.md** | 254 | オフライン同期機能の詳細ドキュメント |
+| **README.md** | 1,500+ | プロジェクトドキュメント（大幅拡張） |
+| **SpreadsheetIds.gs** | 80 | スプレッドシートID管理 |
+| **TimeSlotConfig.gs** | 95 | 時間帯設定管理 |
 | **OfflineCode.gs** | 463 | オフライン用GASコード |
 | **OfflineSpreadsheetIds.gs** | 68 | オフライン用スプレッドシートID管理 |
 | **OfflineTimeSlotConfig.gs** | 71 | オフライン用時間帯設定 |
-| **README.md** | 997 | プロジェクトドキュメント |
-| **SpreadsheetIds.gs** | 80 | スプレッドシートID管理 |
-| **TimeSlotConfig.gs** | 95 | 時間帯設定管理 |
-| **api.js** | 322 | GAS API呼び出し機能 |
-| **config.js** | 20 | システム設定 |
-| **error-handler.js** | 208 | エラーハンドリング機能 |
-| **index-main.js** | 14 | 組選択ページのメインロジック |
-| **index.html** | 75 | 組選択ページ |
-| **offline-sync-v2.css** | 896 | オフライン同期UI |
-| **offline-sync-v2.js** | 2,569 | オフライン同期システム（v2.0） |
-| **offline-sync.js** | 571 | 旧オフライン同期システム |
-| **seats-main.js** | 1,445 | 座席選択・予約ページのメインロジック |
-| **seats.css** | 816 | 座席選択ページ専用スタイル |
-| **seats.html** | 119 | 座席選択・予約ページ |
-| **sidebar.css** | 249 | サイドバー専用スタイル |
-| **sidebar.js** | 267 | サイドバーとモード管理機能 |
-| **styles.css** | 246 | 全体共通スタイル |
-| **sw.js** | 87 | Service Worker |
-| **system-lock.js** | 102 | システムロック機能 |
 | **system-setting.gs** | 71 | システム設定ユーティリティ |
+| **api.js** | 322 | GAS API呼び出し機能 |
+| **optimized-api.js** | 400+ | 最適化されたAPI呼び出し機能 |
+| **api-cache.js** | 300+ | インテリジェントキャッシュシステム |
+| **optimized-loader.js** | 200+ | 最適化されたスクリプトローダー |
+| **ui-optimizer.js** | 150+ | UI応答性の最適化 |
+| **performance-monitor.js** | 200+ | パフォーマンス監視 |
+| **enhanced-status-monitor.js** | 400+ | 強化座席監視システム |
+| **audit-logger.js** | 200+ | 監査ログシステム |
+| **config.js** | 300+ | システム設定とURL管理機能 |
+| **error-handler.js** | 208 | エラーハンドリング機能 |
+| **system-lock.js** | 102 | システムロック機能 |
+| **pwa-update.js** | 150+ | PWA更新通知システム |
+| **pwa-install.js** | 100+ | PWAインストール促進機能 |
+| **offline-sync-v2.js** | 2,569 | オフライン同期システム（v2.0） |
+| **offline-sync-v2.css** | 896 | オフライン同期UI |
+| **offline-sync.js** | 571 | 旧オフライン同期システム |
+| **sw.js** | 214 | Service Worker（v2.3 PWA更新対応版） |
+| **index.html** | 409 | 組選択ページ（PWA更新通知機能追加） |
+| **index-main.js** | 14 | 組選択ページのメインロジック |
+| **timeslot.html** | 67 | 時間帯選択ページ |
 | **timeslot-main.js** | 175 | 時間帯選択ページのメインロジック |
 | **timeslot-schedules.js** | 80 | 時間帯スケジュール定義 |
-| **timeslot.html** | 67 | 時間帯選択ページ |
+| **seats.html** | 119 | 座席選択・予約ページ |
+| **seats-main.js** | 1,445 | 座席選択・予約ページのメインロジック |
+| **seats.css** | 816 | 座席選択ページ専用スタイル |
+| **walkin.html** | 109 | 当日券発行ページ |
 | **walkin-main.js** | 458 | 当日券発行ページのメインロジック |
 | **walkin.css** | 317 | 当日券ページ専用スタイル |
-| **walkin.html** | 109 | 当日券発行ページ |
+| **logs.html** | 200+ | 操作ログ表示ページ |
+| **logs-main.js** | 300+ | 操作ログ表示ページのメインロジック |
+| **logs.css** | 150+ | ログページ専用スタイル |
+| **monitoring-dashboard.html** | 1,500+ | 強化監視ダッシュボード |
+| **sidebar.js** | 267 | サイドバーとモード管理機能 |
+| **sidebar.css** | 249 | サイドバー専用スタイル |
+| **styles.css** | 246 | 全体共通スタイル |
+| **manifest.json** | 83 | PWAマニフェスト |
+| **browserconfig.xml** | 20+ | ブラウザ設定 |
 
-**合計: 12,573行**
+**合計: 15,000+行**（v2.3で大幅に拡張）
 
 ### 🔗 依存関係図（v2.3 最新）
 ```mermaid
