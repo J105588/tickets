@@ -501,6 +501,22 @@ class GasAPI {
       };
 
       const response = await this._retryWithBackoff(task, shouldRetry, { retries: 3, baseDelayMs: 500, maxDelayMs: 3000, jitter: true });
+      // 件名/本文が提供されていない場合のフォールバック（GAS側テンプレ依存を避ける）
+      try {
+        if (payload && (!payload.subject || !payload.body)) {
+          const abnormal = (payload && Array.isArray(payload.notifications)) ? payload.notifications.map(n => n.timeslot || {}) : [];
+          const header = `座席監視システムからの通知\n\n対象: 異常ステータスの公演 (${abnormal.length}件)\n時刻: ${new Date().toLocaleString('ja-JP')}\n\n`;
+          const sections = abnormal.map(t => {
+            const title = `公演：${t.group} ${String(t.day)}日目 ${t.timeslot}`;
+            const status = `現在の状況：${t.capacityLevel || ''}`;
+            const remain = `残り：${Number.isFinite(t.emptySeats) ? t.emptySeats : 0}/${Number.isFinite(t.totalSeats) ? t.totalSeats : 0} 席`;
+            const last = `最終更新：${t.lastChecked ? new Date(t.lastChecked).toLocaleString('ja-JP') : '-'}`;
+            return `${title}\n${status}\n${remain}\n${last}\n--------`;
+          }).join('\n');
+          response.fallbackSubject = payload.subject || `[座席監視] 異常ステータス ${abnormal.length}件`;
+          response.fallbackBody = payload.body || (header + sections);
+        }
+      } catch (_) {}
       return response;
     } catch (e) {
       const finalMsg = `通知メール送信に失敗しました: ${e.message || e}`;

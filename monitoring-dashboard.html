@@ -644,6 +644,7 @@
                 this.isRefreshing = false;
                 this.isSendingEmail = false;
                 this.nextEmailCheckAt = 0;
+                this.lastEmailSignature = '';
                 this.latestTimeslotMap = new Map();
                 
                 this.initializeElements();
@@ -690,6 +691,16 @@
                 this.elements.warningThreshold.addEventListener('change', () => this.updateStatusIndicator());
                 this.elements.criticalThreshold.addEventListener('change', () => this.updateStatusIndicator());
                 this.elements.cooldownPeriod.addEventListener('change', () => this.updateStatusIndicator());
+
+                // ステータスカードクリックで該当クラス一覧を表示
+                const fullCard = document.querySelector('.status-card.full');
+                const criticalCard = document.querySelector('.status-card.critical');
+                const warningCard = document.querySelector('.status-card.warning');
+                const normalCard = document.querySelector('.status-card.normal');
+                if (fullCard) fullCard.addEventListener('click', () => this.showStatusListModal('full'));
+                if (criticalCard) criticalCard.addEventListener('click', () => this.showStatusListModal('critical'));
+                if (warningCard) warningCard.addEventListener('click', () => this.showStatusListModal('warning'));
+                if (normalCard) normalCard.addEventListener('click', () => this.showStatusListModal('normal'));
             }
 
             async loadInitialData() {
@@ -1029,11 +1040,35 @@
                         this.nextEmailCheckAt = now + 5 * 60 * 1000;
                         return;
                     }
+                    const signature = this.buildAbnormalSignature(abnormal);
+                    if (signature === this.lastEmailSignature) {
+                        // 変化なし → スキップして次回へ
+                        this.nextEmailCheckAt = now + 5 * 60 * 1000;
+                        return;
+                    }
                     // 送信処理を非同期で実行
                     this.sendAbnormalStatusEmail(abnormal).finally(() => {
+                        this.lastEmailSignature = signature;
                         this.nextEmailCheckAt = Date.now() + 5 * 60 * 1000;
                     });
                 } catch (_) {}
+            }
+
+            buildAbnormalSignature(abnormal) {
+                try {
+                    const parts = abnormal
+                        .map(t => {
+                            const id = this.getTimeslotId(t);
+                            const lvl = t.capacityLevel || '';
+                            const empty = Number.isFinite(t.emptySeats) ? t.emptySeats : -1;
+                            const occ = Number.isFinite(t.occupiedSeats) ? t.occupiedSeats : -1;
+                            return `${id}|${lvl}|${empty}|${occ}`;
+                        })
+                        .sort();
+                    return parts.join('||');
+                } catch (_) {
+                    return String(Math.random());
+                }
             }
 
             async sendAbnormalStatusEmail(abnormal) {
@@ -1084,7 +1119,9 @@
                         summary: safeSummary,
                         statistics: safeStats,
                         timestamp: new Date().toISOString(),
-                        source: 'monitoring-dashboard'
+                        source: 'monitoring-dashboard',
+                        subject: `[座席監視] 異常ステータス ${abnormal.length}件`,
+                        body: this.buildHumanReadableBody(abnormal)
                     };
 
                     console.log(`[Email Trigger] 異常ステータス ${abnormal.length} 件、送信開始`);
@@ -1098,6 +1135,22 @@
                     console.warn('[Email Trigger] 例外', e && e.message ? e.message : e);
                 } finally {
                     this.isSendingEmail = false;
+                }
+            }
+
+            buildHumanReadableBody(abnormal) {
+                try {
+                    const header = `座席監視システムからの通知\n\n対象: 異常ステータスの公演 (${abnormal.length}件)\n時刻: ${new Date().toLocaleString('ja-JP')}\n\n`;
+                    const sections = abnormal.map(t => {
+                        const title = `公演：${t.group} ${String(t.day)}日目 ${t.timeslot}`;
+                        const status = `現在の状況：${this.getCapacityLevelText(t.capacityLevel || 'normal')}`;
+                        const remain = `残り：${Number.isFinite(t.emptySeats) ? t.emptySeats : 0}/${Number.isFinite(t.totalSeats) ? t.totalSeats : 0} 席`;
+                        const last = `最終更新：${t.lastChecked ? new Date(t.lastChecked).toLocaleString('ja-JP') : '-'}`;
+                        return `${title}\n${status}\n${remain}\n${last}\n--------`;
+                    }).join('\n');
+                    return header + sections;
+                } catch (_) {
+                    return '異常ステータスの公演が検出されました。詳細表示に失敗しましたが、ダッシュボードをご確認ください。';
                 }
             }
 
@@ -1183,6 +1236,70 @@
                 }
 
                 // 常時表示: 余分なカードは維持（非更新のカードはそのまま）
+            }
+
+            getTimeslotsByLevel(level) {
+                try {
+                    const all = Array.from(this.latestTimeslotMap.values());
+                    return all.filter(t => (t.capacityLevel || 'normal') === level);
+                } catch (_) { return []; }
+            }
+
+            showStatusListModal(level) {
+                try {
+                    const list = this.getTimeslotsByLevel(level);
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'background:#fff;border-radius:12px;max-width:720px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 12px 32px rgba(0,0,0,.25);';
+                    const header = document.createElement('div');
+                    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#667eea;color:#fff;padding:14px 16px;font-weight:600;';
+                    header.textContent = `ステータス一覧：${this.getCapacityLevelText(level)} (${list.length}件)`;
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '閉じる';
+                    closeBtn.style.cssText = 'margin-left:12px;background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;';
+                    closeBtn.addEventListener('click', () => overlay.remove());
+                    header.appendChild(closeBtn);
+                    const body = document.createElement('div');
+                    body.style.cssText = 'padding:16px;';
+
+                    if (list.length === 0) {
+                        body.innerHTML = '<p style="color:#666;text-align:center;padding:24px;">該当する公演はありません</p>';
+                    } else {
+                        const items = list
+                          .sort((a,b) => String(a.group).localeCompare(String(b.group)) || String(a.day).localeCompare(String(b.day)) || String(a.timeslot).localeCompare(String(b.timeslot)))
+                          .map(t => {
+                            const remain = `${Number.isFinite(t.emptySeats) ? t.emptySeats : 0}/${Number.isFinite(t.totalSeats) ? t.totalSeats : 0}`;
+                            const last = t.lastChecked ? new Date(t.lastChecked).toLocaleString('ja-JP') : '-';
+                            return `<div style="border:1px solid #e1e5e9;border-left:4px solid;${this.statusBorderColor(level)};border-radius:8px;padding:12px;margin:8px 0;background:#f8f9fa;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <div style="font-weight:600;">${t.group} ${String(t.day)}日目 ${t.timeslot}</div>
+                                    <span style="font-size:12px;color:#666;">${last}</span>
+                                </div>
+                                <div style="margin-top:8px;color:#333;">現在の状況：${this.getCapacityLevelText(level)}</div>
+                                <div style="margin-top:4px;color:#333;">残り：${remain} 席</div>
+                            </div>`;
+                          }).join('');
+                        body.innerHTML = items;
+                    }
+
+                    modal.appendChild(header);
+                    modal.appendChild(body);
+                    overlay.appendChild(modal);
+                    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+                    document.body.appendChild(overlay);
+                } catch (e) {
+                    console.warn('showStatusListModal failed:', e);
+                }
+            }
+
+            statusBorderColor(level) {
+                switch (level) {
+                    case 'full': return 'border-left-color:#e74c3c;';
+                    case 'critical': return 'border-left-color:#f39c12;';
+                    case 'warning': return 'border-left-color:#f1c40f;';
+                    default: return 'border-left-color:#27ae60;';
+                }
             }
 
             getTimeslotId(timeslot) {
