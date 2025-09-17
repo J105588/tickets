@@ -7,11 +7,10 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
-  "orientation": "portrait-primary",
   "scope": "./",
   "lang": "ja",
   "dir": "ltr",
-  "categories": ["productivity", "utilities"],
+  "categories": ["productivity", "utilities", "business"],
   "icons": [
     {
       "src": "https://lh3.googleusercontent.com/a/ACg8ocJIgKhq2qCWSld0Kx1pBDyJxosdON3XvHd2th1B4CrPkFRN82M=s360-c-no",
@@ -79,5 +78,12 @@
   },
   "launch_handler": {
     "client_mode": "focus-existing"
-  }
+  },
+  "ios": {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "座席管理システム"
+  },
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any"
 }

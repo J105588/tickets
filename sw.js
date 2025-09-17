@@ -92,7 +92,11 @@ self.addEventListener('push', (event) => {
 			vibrate: [100, 50, 100],
 			tag: notificationType,
 			renotify: true,
-			data: data
+			data: data,
+			// iOS向けの追加設定
+			requireInteraction: false,
+			silent: false,
+			timestamp: Date.now()
 		};
 
 		// 通知タイプに応じた設定
@@ -104,6 +108,8 @@ self.addEventListener('push', (event) => {
 					{ action: 'view', title: '確認する' },
 					{ action: 'close', title: '閉じる' }
 				];
+				// iOS向けの重要度設定
+				options.requireInteraction = true;
 				break;
 			case 'system_update':
 				title = 'システム更新';
@@ -112,6 +118,22 @@ self.addEventListener('push', (event) => {
 					{ action: 'close', title: '後で' }
 				];
 				break;
+			case 'ios_in_app':
+				// iOS向けのアプリ内通知として処理
+				title = data.title || '新しい通知';
+				options.body = data.body || data.message || '';
+				options.actions = data.actions || [];
+				// iOS向けの特別な処理
+				options.requireInteraction = false;
+				break;
+		}
+
+		// iOS向けの通知表示最適化
+		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+		if (isIOS) {
+			// iOS向けの通知設定を調整
+			options.vibrate = undefined; // iOSではvibrateは無効
+			options.badge = undefined; // iOSではbadgeは制限される場合がある
 		}
 
 		// 通知を表示
@@ -221,28 +243,119 @@ self.addEventListener('message', (event) => {
 		const payload = { type: 'FULL_ALERT', group: event.data.group, day: event.data.day, timeslot: event.data.timeslot, ts: Date.now() };
 		event.waitUntil((async () => {
 			try {
+				// 全クライアントに通知
 				const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-				clients.forEach(c => { try { if (SUPERADMIN_CLIENT_IDS.has(c.id)) { c.postMessage(payload); } } catch(_) {} });
-				if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
-					const title = '満席になりました';
-					const body = `${payload.group} ${payload.day}-${payload.timeslot} が満席になりました`;
-					await self.registration.showNotification(title, { 
-						body, 
-						tag: 'full-alert', 
-						renotify: true,
-						icon: '/icon-192x192.png',
-						badge: '/badge-96x96.png',
-						vibrate: [100, 50, 100],
-						actions: [
-							{ action: 'view', title: '確認する' },
-							{ action: 'close', title: '閉じる' }
-						]
-					});
-				}
-			} catch (_) {}
+				clients.forEach(c => { 
+					try { 
+						c.postMessage(payload); 
+					} catch(_) {} 
+				});
+
+				// プッシュ通知を送信
+				await this.sendFullAlertNotification(payload);
+			} catch (error) {
+				console.error('FULL_ALERT処理エラー:', error);
+			}
+		})());
+	}
+
+	// 試験配信の処理
+	if (event.data && event.data.type === 'TEST_NOTIFICATION') {
+		event.waitUntil((async () => {
+			try {
+				const testData = event.data.notification ? JSON.parse(event.data.notification) : event.data;
+				await this.sendTestNotification(testData);
+			} catch (error) {
+				console.error('TEST_NOTIFICATION処理エラー:', error);
+			}
 		})());
 	}
 });
+
+// 満席通知を送信
+async function sendFullAlertNotification(payload) {
+	try {
+		const title = '満席になりました';
+		const body = `${payload.group} ${payload.day}-${payload.timeslot} が満席になりました`;
+		
+		// 通知オプションを設定
+		const options = {
+			body,
+			tag: 'full-alert',
+			renotify: true,
+			icon: '/icon-192x192.png',
+			badge: '/badge-96x96.png',
+			vibrate: [100, 50, 100],
+			requireInteraction: true,
+			silent: false,
+			timestamp: Date.now(),
+			data: payload,
+			actions: [
+				{ action: 'view', title: '確認する' },
+				{ action: 'close', title: '閉じる' }
+			]
+		};
+
+		// iOS向けの調整
+		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+		if (isIOS) {
+			options.vibrate = undefined;
+			options.badge = undefined;
+		}
+
+		// 通知を表示
+		if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
+			await self.registration.showNotification(title, options);
+			console.log('満席通知を送信しました:', payload);
+		} else {
+			console.warn('通知権限がありません');
+		}
+	} catch (error) {
+		console.error('満席通知の送信に失敗:', error);
+	}
+}
+
+// 試験配信を送信
+async function sendTestNotification(testData) {
+	try {
+		const title = testData.title || '試験配信';
+		const body = testData.body || '満席通知システムのテストです。';
+		
+		// 通知オプションを設定
+		const options = {
+			body,
+			tag: 'test-notification',
+			renotify: false,
+			icon: '/icon-192x192.png',
+			badge: '/badge-96x96.png',
+			vibrate: [100, 50, 100],
+			requireInteraction: false,
+			silent: false,
+			timestamp: Date.now(),
+			data: testData,
+			actions: [
+				{ action: 'close', title: '閉じる' }
+			]
+		};
+
+		// iOS向けの調整
+		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+		if (isIOS) {
+			options.vibrate = undefined;
+			options.badge = undefined;
+		}
+
+		// 通知を表示
+		if (self.registration.showNotification && Notification && Notification.permission === 'granted') {
+			await self.registration.showNotification(title, options);
+			console.log('試験配信を送信しました:', testData);
+		} else {
+			console.warn('通知権限がありません');
+		}
+	} catch (error) {
+		console.error('試験配信の送信に失敗:', error);
+	}
+}
 
 // 新しいService Workerが利用可能になった時の処理
 self.addEventListener('message', (event) => {
