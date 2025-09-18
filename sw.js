@@ -156,7 +156,12 @@ self.addEventListener('fetch', (event) => {
 				// navigation preload があれば先に利用
 				let response = undefined;
 				if (event.preloadResponse) {
-					response = await event.preloadResponse;
+					try {
+						response = await event.preloadResponse;
+					} catch (e) {
+						// preloadResponse がキャンセルされた場合は通常のfetchを使用
+						console.log('Navigation preload cancelled, falling back to fetch');
+					}
 				}
 				if (!response) {
 					response = await fetch(req);

@@ -17,9 +17,10 @@ const DAY = urlParams.get('day') || '1';
 const TIMESLOT = urlParams.get('timeslot') || 'A';
 const IS_ADMIN = urlParams.get('admin') === 'true';
 
-// ゲネプロモード時の時間帯偽装
+// ゲネプロモード時の時間帯・グループ偽装
 const DISPLAY_TIMESLOT = TIMESLOT; // 表示用の時間帯
 const ACTUAL_TIMESLOT = DemoMode.enforceGeneproTimeslot(TIMESLOT); // 実際にAPIで使用する時間帯
+const ACTUAL_GROUP = DemoMode.enforceGeneproGroupForAPI(GROUP); // 実際にAPIで使用するグループ
 
 let selectedSeats = [];
 let isAutoRefreshEnabled = true;
@@ -164,8 +165,8 @@ const apiEndpoint = apiUrlManager.getCurrentUrl();
       // キャッシュがない場合のみ以降の処理に進む
     }
     
-    console.log('GasAPI.getSeatData呼び出し:', { GROUP, DAY, TIMESLOT: ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode });
-    const seatData = await GasAPI.getSeatData(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
+    console.log('GasAPI.getSeatData呼び出し:', { GROUP: ACTUAL_GROUP, DAY, TIMESLOT: ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode });
+    const seatData = await GasAPI.getSeatData(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
     
     // 詳細なデバッグ情報をコンソールに出力
     console.log("===== 座席データ詳細情報 =====");
@@ -387,10 +388,10 @@ function startAutoRefresh() {
         let seatData;
         if (isAdminMode || isSuperAdminMode) {
           // 管理者モードの場合は完全なデータを取得
-          seatData = await GasAPI.getSeatData(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
+          seatData = await GasAPI.getSeatData(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
         } else {
           // 通常モードの場合は最小限のデータを取得（高速化）
-          seatData = await GasAPI.getSeatDataMinimal(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode);
+          seatData = await GasAPI.getSeatDataMinimal(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode);
         }
         
         if (seatData.success) {
@@ -776,7 +777,7 @@ async function manualRefresh() {
       }
     }
     
-    const seatData = await GasAPI.getSeatData(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
+    const seatData = await GasAPI.getSeatData(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
     
     if (seatData.success) {
       try { if (window.writeCache) { window.writeCache(GROUP, DAY, TIMESLOT, seatData); } } catch (_) {}
@@ -884,7 +885,7 @@ async function checkInSelected() {
   
   try {
     // バックグラウンドでAPI呼び出し
-    const response = await GasAPI.checkInMultipleSeats(GROUP, DAY, TIMESLOT, seatIds);
+    const response = await GasAPI.checkInMultipleSeats(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, seatIds);
     
     if (response.success) {
       // 成功時：即座に成功メッセージを表示（ローダーは非表示）
@@ -900,7 +901,7 @@ async function checkInSelected() {
           const isAdminMode = currentMode === 'admin' || IS_ADMIN;
           const isSuperAdminMode = currentMode === 'superadmin';
           
-          const seatData = await GasAPI.getSeatData(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
+          const seatData = await GasAPI.getSeatData(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
           
           if (seatData.success) {
             // サイレント更新：座席マップを再描画
@@ -1034,7 +1035,7 @@ async function confirmReservation() {
           const isAdminMode = currentMode === 'admin' || IS_ADMIN;
           const isSuperAdminMode = currentMode === 'superadmin';
           
-          const seatData = await GasAPI.getSeatData(GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
+          const seatData = await GasAPI.getSeatData(ACTUAL_GROUP, DAY, ACTUAL_TIMESLOT, isAdminMode, isSuperAdminMode);
           
           if (seatData.success) {
             // サイレント更新：座席マップを再描画

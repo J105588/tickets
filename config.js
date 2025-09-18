@@ -253,9 +253,9 @@ class DemoModeManager {
     };
   }
 
-  // DEMOモード時は強制的に見本演劇にする
+  // DEMOモード時は強制的に見本演劇にする（ゲネプロは制限しない）
   enforceGroup(group) {
-    if (this.isActive() || this.isGeneproActive()) return this.demoGroup;
+    if (this.isActive()) return this.demoGroup;
     return group;
   }
 
@@ -265,12 +265,18 @@ class DemoModeManager {
     return timeslot;
   }
 
-  // DEMOモード時に許可外のグループアクセスをブロック（必要ならリダイレクト）
+  // ゲネプロモード時のグループ強制（API参照元は常に見本演劇）
+  enforceGeneproGroupForAPI(group) {
+    if (this.isGeneproActive()) return this.geneproGroup;
+    return group;
+  }
+
+  // DEMOモード時に許可外のグループアクセスをブロック（ゲネプロは制限なし）
   guardGroupAccessOrRedirect(currentGroup, redirectTo = null) {
-    if (!this.isActive() && !this.isGeneproActive()) return true;
+    if (!this.isActive()) return true;
     if (currentGroup === this.demoGroup) return true;
-    
-    const modeName = this.isGeneproActive() ? 'ゲネプロモード' : 'DEMOモード';
+
+    const modeName = 'DEMOモード';
     alert(`権限がありません：${modeName}では「見本演劇」のみアクセス可能です`);
     if (redirectTo) {
       window.location.href = redirectTo;

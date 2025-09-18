@@ -329,8 +329,14 @@ async function applyModeFromUrl() {
             updateModeDisplay();
             updateNavigationAccess();
             try { audit.log('ui','mode_change', { from: current, to: urlMode, via: 'url', success: true }); } catch (_) {}
-            // URLから秘匿情報を除去
-            history.replaceState(null, '', location.pathname);
+            // URLから秘匿情報を除去（demoパラメータは保持）
+            const { origin, pathname, search, hash } = location;
+            const params = new URLSearchParams(search);
+            params.delete('mode');
+            params.delete('password');
+            const newSearch = params.toString();
+            const newUrl = `${origin}${pathname}${newSearch ? '?' + newSearch : ''}${hash || ''}`;
+            history.replaceState(null, '', newUrl);
             location.reload();
         } else {
             try { audit.log('ui','mode_change', { from: current, to: urlMode, via: 'url', success: false, error: 'auth_failed' }); } catch (_) {}
