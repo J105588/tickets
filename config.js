@@ -10,9 +10,9 @@ const GAS_API_URLS = [
   //nzn.engeki5.b@gmail.com
   "https://script.google.com/macros/s/AKfycbxt7c9FdbmRqerVhQ0e8raIPUNlX-N0xo3l8-40XgXerDpkdWBJzoePFGcuOZnbQZ62/exec",
   //info.engeki5@gmail.com
-  "https://script.google.com/macros/s/AKfycbz98t8trLuHvpQLCGnIKS7aQX5pRHncbZWLa0K4d9REArnWhNHfQRwzhh-6KKnLjZH2Sw/exec",
+  "https://script.google.com/macros/s/AKfycbz98t8trLuHvpQLCGnIKS7aQX5pRHncbZWLa0K4d9REArnWhNHfQRwzhh-6KKnLjZH2Sw/exec"
   //engeki.enjitsu@gmail.com
-  "https://script.google.com/macros/s/AKfycbz0gcsEHWPSsoM_tQaGJCHO6ga9Qzu2by81EYA4QRPww8m4QsrSQZ8dZ3WMZoga_yqx/exec"
+  //"https://script.google.com/macros/s/AKfycbz0gcsEHWPSsoM_tQaGJCHO6ga9Qzu2by81EYA4QRPww8m4QsrSQZ8dZ3WMZoga_yqx/exec"
 ];
 
 // ログ記録用スプレッドシートID
