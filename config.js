@@ -151,7 +151,10 @@ const FEATURE_FLAGS = {
 class DemoModeManager {
   constructor() {
     this.storageKey = 'DEMO_MODE_ACTIVE';
+    this.geneproStorageKey = 'GENEPRO_MODE_ACTIVE';
     this.demoGroup = '見本演劇';
+    this.geneproGroup = '見本演劇';
+    this.geneproTimeslot = 'A'; // ゲネプロモードでは常にA時間帯を参照
     this._initFromUrl();
     // コンソール操作用に公開
     try {
@@ -161,9 +164,14 @@ class DemoModeManager {
         isActive: () => this.isActive(),
         demoGroup: this.demoGroup,
         logStatus: () => this.logStatus(),
-        notify: () => this.showNotificationIfNeeded(true)
+        notify: () => this.showNotificationIfNeeded(true),
+        // ゲネプロモード用
+        isGeneproActive: () => this.isGeneproActive(),
+        enableGenepro: () => this.enableGenepro(),
+        disableGenepro: () => this.disableGenepro(),
+        getGeneproInfo: () => this.getGeneproInfo()
       };
-      debugLog('[DemoMode] console command ready: DemoMode.disable()');
+      debugLog('[DemoMode] console command ready: DemoMode.disable(), DemoMode.enableGenepro()');
     } catch (_) {}
 
     // 状態をログ出力
@@ -176,10 +184,16 @@ class DemoModeManager {
       const demo = params.get('demo');
       if (demo && ['1', 'true', 'on', 'yes'].includes(String(demo).toLowerCase())) {
         localStorage.setItem(this.storageKey, 'true');
+        localStorage.removeItem(this.geneproStorageKey); // 通常デモモードを優先
         debugLog('[DemoMode] Activated via URL parameter');
+      } else if (demo && ['2'].includes(String(demo))) {
+        localStorage.removeItem(this.storageKey);
+        localStorage.setItem(this.geneproStorageKey, 'true');
+        debugLog('[GeneproMode] Activated via URL parameter demo=2');
       } else if (demo && ['0', 'false', 'off', 'no', 'disable'].includes(String(demo).toLowerCase())) {
         localStorage.removeItem(this.storageKey);
-        debugLog('[DemoMode] Disabled via URL parameter');
+        localStorage.removeItem(this.geneproStorageKey);
+        debugLog('[DemoMode/GeneproMode] Disabled via URL parameter');
         // DEMO解除時はURLからパラメーターを削除
         this._removeDemoParamFromUrl();
       }
@@ -211,17 +225,53 @@ class DemoModeManager {
     try { localStorage.removeItem(this.storageKey); debugLog('[DemoMode] Disabled'); } catch (_) {}
   }
 
+  // ゲネプロモード用メソッド
+  isGeneproActive() {
+    try { return localStorage.getItem(this.geneproStorageKey) === 'true'; } catch (_) { return false; }
+  }
+
+  enableGenepro() {
+    try { 
+      localStorage.setItem(this.geneproStorageKey, 'true');
+      localStorage.removeItem(this.storageKey); // 通常デモモードを無効化
+      debugLog('[GeneproMode] Enabled');
+    } catch (_) {}
+  }
+
+  disableGenepro() {
+    try { 
+      localStorage.removeItem(this.geneproStorageKey); 
+      debugLog('[GeneproMode] Disabled'); 
+    } catch (_) {}
+  }
+
+  getGeneproInfo() {
+    return {
+      isActive: this.isGeneproActive(),
+      group: this.geneproGroup,
+      referenceTimeslot: this.geneproTimeslot
+    };
+  }
+
   // DEMOモード時は強制的に見本演劇にする
   enforceGroup(group) {
-    if (this.isActive()) return this.demoGroup;
+    if (this.isActive() || this.isGeneproActive()) return this.demoGroup;
     return group;
+  }
+
+  // ゲネプロモード時の時間帯強制（常にA時間帯を参照）
+  enforceGeneproTimeslot(timeslot) {
+    if (this.isGeneproActive()) return this.geneproTimeslot;
+    return timeslot;
   }
 
   // DEMOモード時に許可外のグループアクセスをブロック（必要ならリダイレクト）
   guardGroupAccessOrRedirect(currentGroup, redirectTo = null) {
-    if (!this.isActive()) return true;
+    if (!this.isActive() && !this.isGeneproActive()) return true;
     if (currentGroup === this.demoGroup) return true;
-    alert('権限がありません：DEMOモードでは「見本演劇」のみアクセス可能です');
+    
+    const modeName = this.isGeneproActive() ? 'ゲネプロモード' : 'DEMOモード';
+    alert(`権限がありません：${modeName}では「見本演劇」のみアクセス可能です`);
     if (redirectTo) {
       window.location.href = redirectTo;
     }
@@ -231,12 +281,14 @@ class DemoModeManager {
   // DEMOモードが有効で、かつURLにクエリが無い場合は demo=1 を付与
   ensureDemoParamInLocation() {
     try {
-      if (!this.isActive()) return;
+      if (!this.isActive() && !this.isGeneproActive()) return;
       const { href, origin, pathname, search, hash } = window.location;
       if (search && /(?:^|[?&])demo=/.test(search)) return; // 既にある
       if (!search || search === '') {
-        const next = `${origin}${pathname}?demo=1${hash || ''}`;
-        debugLog('[DemoMode] Append demo=1 to URL', { from: href, to: next });
+        const demoParam = this.isGeneproActive() ? 'demo=2' : 'demo=1';
+        const next = `${origin}${pathname}?${demoParam}${hash || ''}`;
+        const modeName = this.isGeneproActive() ? 'GeneproMode' : 'DemoMode';
+        debugLog(`[${modeName}] Append ${demoParam} to URL`, { from: href, to: next });
         window.history.replaceState(null, '', next);
       }
     } catch (_) {}
@@ -245,7 +297,9 @@ class DemoModeManager {
   // 状態ログを出力
   logStatus() {
     try {
-      if (this.isActive()) {
+      if (this.isGeneproActive()) {
+        console.log('[GeneproMode] Active - group limited to', this.geneproGroup, ', reference timeslot:', this.geneproTimeslot);
+      } else if (this.isActive()) {
         console.log('[DemoMode] Active - group limited to', this.demoGroup);
       } else {
         console.log('[DemoMode] Inactive');
@@ -256,8 +310,8 @@ class DemoModeManager {
   // DEMOモード通知モジュール（オーバーレイ＋モーダル）。外側タップで閉じる。
   showNotificationIfNeeded(force = false) {
     try {
-      if (!this.isActive() && !force) return;
-      const notifiedKey = 'DEMO_MODE_NOTIFIED';
+      if (!this.isActive() && !this.isGeneproActive() && !force) return;
+      const notifiedKey = this.isGeneproActive() ? 'GENEPRO_MODE_NOTIFIED' : 'DEMO_MODE_NOTIFIED';
       if (!force && sessionStorage.getItem(notifiedKey) === 'true') return;
 
       const overlay = document.createElement('div');
@@ -266,10 +320,18 @@ class DemoModeManager {
       modal.style.cssText = 'background:#fff;border-radius:12px;max-width:480px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,.25);overflow:hidden;';
       const header = document.createElement('div');
       header.style.cssText = 'background:#6f42c1;color:#fff;padding:14px 16px;font-weight:600;';
-      header.textContent = 'DEMOモード';
+      
       const body = document.createElement('div');
       body.style.cssText = 'padding:16px;color:#333;line-height:1.6;';
-      body.innerHTML = `現在「<b>${this.demoGroup}</b>」のみ操作可能です。<br>モードや予約、チェックイン、当日券発行の操作は見本データにのみ反映されます。`;
+      
+      if (this.isGeneproActive()) {
+        header.textContent = 'ゲネプロモード';
+        body.innerHTML = `現在「<b>${this.geneproGroup}</b>」のゲネプロモードです。`;
+      } else {
+        header.textContent = 'DEMOモード';
+        body.innerHTML = `現在「<b>${this.demoGroup}</b>」のみ操作可能です。<br>モードや予約、チェックイン、当日券発行の操作は見本データにのみ反映されます。`;
+      }
+      
       const footer = document.createElement('div');
       footer.style.cssText = 'padding:12px 16px;display:flex;gap:8px;justify-content:flex-end;background:#f8f9fa;';
       const ok = document.createElement('button');
@@ -286,7 +348,9 @@ class DemoModeManager {
       sessionStorage.setItem(notifiedKey, 'true');
     } catch (_) {
       // フォールバック
-      try { alert('DEMOモード：現在「' + this.demoGroup + '」のみ操作可能です'); } catch (__) {}
+      const modeName = this.isGeneproActive() ? 'ゲネプロモード' : 'DEMOモード';
+      const groupName = this.isGeneproActive() ? this.geneproGroup : this.demoGroup;
+      try { alert(`${modeName}：現在「${groupName}」のみ操作可能です`); } catch (__) {}
     }
   }
 }

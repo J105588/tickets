@@ -1344,60 +1344,58 @@ graph TD
   - メインシステムと同期した時間帯データ
   - 依存: なし（OfflineCode.gsから参照される）
 
-### 📊 ファイルサイズ情報（v2.3）
+### 📊 ファイルサイズ情報（v2.3 実際の数値）
 
 | ファイル | サイズ (行) | 説明 |
 |----------|-------------|------|
 | **.gitignore** | 1 | Git除外設定 |
 | **CNAME** | 0 | カスタムドメイン設定 |
-| **Code.gs** | 1,240 | メインAPI処理とビジネスロジック |
+| **Code.gs** | 2,475 | メインAPI処理とビジネスロジック |
 | **LICENSE** | 21 | ライセンス情報 |
-| **README.md** | 1,500+ | プロジェクトドキュメント（大幅拡張） |
-| **SpreadsheetIds.gs** | 80 | スプレッドシートID管理 |
+| **README.md** | 1,964 | プロジェクトドキュメント（大幅拡張） |
+| **SpreadsheetIds.gs** | 120 | スプレッドシートID管理 |
 | **TimeSlotConfig.gs** | 95 | 時間帯設定管理 |
-| **OfflineCode.gs** | 463 | オフライン用GASコード |
-| **OfflineSpreadsheetIds.gs** | 68 | オフライン用スプレッドシートID管理 |
-| **OfflineTimeSlotConfig.gs** | 71 | オフライン用時間帯設定 |
 | **system-setting.gs** | 71 | システム設定ユーティリティ |
-| **api.js** | 322 | GAS API呼び出し機能 |
-| **optimized-api.js** | 400+ | 最適化されたAPI呼び出し機能 |
-| **api-cache.js** | 300+ | インテリジェントキャッシュシステム |
-| **optimized-loader.js** | 200+ | 最適化されたスクリプトローダー |
-| **ui-optimizer.js** | 150+ | UI応答性の最適化 |
-| **performance-monitor.js** | 200+ | パフォーマンス監視 |
-| **enhanced-status-monitor.js** | 400+ | 強化座席監視システム |
-| **audit-logger.js** | 200+ | 監査ログシステム |
-| **config.js** | 300+ | システム設定とURL管理機能 |
+| **api.js** | 603 | GAS API呼び出し機能 |
+| **optimized-api.js** | 321 | 最適化されたAPI呼び出し機能 |
+| **api-cache.js** | 291 | インテリジェントキャッシュシステム |
+| **optimized-loader.js** | 163 | 最適化されたスクリプトローダー |
+| **ui-optimizer.js** | 369 | UI応答性の最適化 |
+| **performance-monitor.js** | 288 | パフォーマンス監視 |
+| **enhanced-status-monitor.js** | 444 | 強化座席監視システム |
+| **audit-logger.js** | 250 | 監査ログシステム |
+| **config.js** | 304 | システム設定とURL管理機能 |
 | **error-handler.js** | 208 | エラーハンドリング機能 |
-| **system-lock.js** | 102 | システムロック機能 |
-| **pwa-update.js** | 150+ | PWA更新通知システム |
-| **pwa-install.js** | 100+ | PWAインストール促進機能 |
-| **offline-sync-v2.js** | 2,569 | オフライン同期システム（v2.0） |
+| **system-lock.js** | 108 | システムロック機能 |
+| **pwa-update.js** | 480 | PWA更新通知システム |
+| **pwa-install.js** | 187 | PWAインストール促進機能 |
+| **full-capacity-monitor.js** | 268 | 満席監視システム |
+| **offline-sync-v2.js** | 3,246 | オフライン同期システム（v2.0） |
 | **offline-sync-v2.css** | 896 | オフライン同期UI |
 | **offline-sync.js** | 571 | 旧オフライン同期システム |
-| **sw.js** | 214 | Service Worker（v2.3 PWA更新対応版） |
-| **index.html** | 409 | 組選択ページ（PWA更新通知機能追加） |
-| **index-main.js** | 14 | 組選択ページのメインロジック |
-| **timeslot.html** | 67 | 時間帯選択ページ |
-| **timeslot-main.js** | 175 | 時間帯選択ページのメインロジック |
-| **timeslot-schedules.js** | 80 | 時間帯スケジュール定義 |
-| **seats.html** | 119 | 座席選択・予約ページ |
-| **seats-main.js** | 1,445 | 座席選択・予約ページのメインロジック |
-| **seats.css** | 816 | 座席選択ページ専用スタイル |
-| **walkin.html** | 109 | 当日券発行ページ |
-| **walkin-main.js** | 458 | 当日券発行ページのメインロジック |
+| **sw.js** | 213 | Service Worker（v2.3 PWA更新対応版） |
+| **index.html** | 408 | 組選択ページ（PWA更新通知機能追加） |
+| **index-main.js** | 20 | 組選択ページのメインロジック |
+| **timeslot.html** | 400 | 時間帯選択ページ |
+| **timeslot-main.js** | 191 | 時間帯選択ページのメインロジック |
+| **timeslot-schedules.js** | 144 | 時間帯スケジュール定義 |
+| **seats.html** | 439 | 座席選択・予約ページ |
+| **seats-main.js** | 1,771 | 座席選択・予約ページのメインロジック |
+| **seats.css** | 863 | 座席選択ページ専用スタイル |
+| **walkin.html** | 442 | 当日券発行ページ |
+| **walkin-main.js** | 465 | 当日券発行ページのメインロジック |
 | **walkin.css** | 317 | 当日券ページ専用スタイル |
-| **logs.html** | 200+ | 操作ログ表示ページ |
-| **logs-main.js** | 300+ | 操作ログ表示ページのメインロジック |
-| **logs.css** | 150+ | ログページ専用スタイル |
-| **monitoring-dashboard.html** | 1,500+ | 強化監視ダッシュボード |
-| **sidebar.js** | 267 | サイドバーとモード管理機能 |
+| **logs.html** | 343 | 操作ログ表示ページ |
+| **logs-main.js** | 908 | 操作ログ表示ページのメインロジック |
+| **logs.css** | 634 | ログページ専用スタイル |
+| **monitoring-dashboard.html** | 1,488 | 強化監視ダッシュボード |
+| **sidebar.js** | 360 | サイドバーとモード管理機能 |
 | **sidebar.css** | 249 | サイドバー専用スタイル |
-| **styles.css** | 246 | 全体共通スタイル |
+| **styles.css** | 302 | 全体共通スタイル |
 | **manifest.json** | 83 | PWAマニフェスト |
-| **browserconfig.xml** | 20+ | ブラウザ設定 |
+| **browserconfig.xml** | 9 | ブラウザ設定 |
 
-**合計: 15,000+行**（v2.3で大幅に拡張）
+**合計: 23,793行**（v2.3で大幅に拡張）
 
 ### 🔗 依存関係図（v2.3 最新）
 ```mermaid

@@ -19,8 +19,12 @@ import * as timeSlotConfig from './timeslot-schedules.js';
   } catch (_) {}
   // DEMOモードでクエリが無い最初のURLなら demo=1 を付与
   try { DemoMode.ensureDemoParamInLocation(); } catch (_) {}
-  // DEMOアクティブ時に通知
-  try { if (DemoMode.isActive()) DemoMode.showNotificationIfNeeded(); } catch (_) {}
+  // DEMO/ゲネプロモードアクティブ時に通知
+  try { 
+    if (DemoMode.isActive() || DemoMode.isGeneproActive()) {
+      DemoMode.showNotificationIfNeeded();
+    }
+  } catch (_) {}
 
   const urlParams = new URLSearchParams(window.location.search);
   const requestedGroup = urlParams.get('group') || '';

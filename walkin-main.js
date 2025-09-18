@@ -16,6 +16,10 @@ let GROUP = DemoMode.enforceGroup(requestedGroup);
 const DAY = urlParams.get('day');
 const TIMESLOT = urlParams.get('timeslot');
 
+// ゲネプロモード時の時間帯偽装
+const DISPLAY_TIMESLOT = TIMESLOT; // 表示用の時間帯
+const ACTUAL_TIMESLOT = DemoMode.enforceGeneproTimeslot(TIMESLOT); // 実際にAPIで使用する時間帯
+
 let _isIssuingWalkin = false;
 
 // 初期化
@@ -28,15 +32,20 @@ window.onload = async () => {
   
   // サイドバー読み込み
   loadSidebar();
-  // DEMOアクティブ時に通知
-  try { if (DemoMode.isActive()) DemoMode.showNotificationIfNeeded(); } catch (_) {}
+  // DEMO/ゲネプロモードアクティブ時に通知
+  try { 
+    if (DemoMode.isActive() || DemoMode.isGeneproActive()) {
+      DemoMode.showNotificationIfNeeded();
+    }
+  } catch (_) {}
   
   // 表示情報設定
   const groupName = isNaN(parseInt(GROUP)) ? GROUP : GROUP + '組';
-  document.getElementById('performance-info').textContent = `${groupName} ${DAY}日目 ${TIMESLOT}`;
+  const displayTimeslot = DemoMode.isGeneproActive() ? DISPLAY_TIMESLOT : TIMESLOT;
+  document.getElementById('performance-info').textContent = `${groupName} ${DAY}日目 ${displayTimeslot}`;
   document.getElementById('reservation-details').innerHTML = `
     座席が確保されました<br>
-    ${groupName} ${DAY}日目 ${TIMESLOT}
+    ${groupName} ${DAY}日目 ${displayTimeslot}
   `;
   
   // 当日券モードのアクセス制限をチェック
@@ -168,7 +177,7 @@ async function issueWalkinConsecutive() {
   reservationResult.classList.remove('show');
 
   try {
-    const response = await GasAPI.assignWalkInConsecutiveSeats(GROUP, DAY, TIMESLOT, num);
+    const response = await GasAPI.assignWalkInConsecutiveSeats(GROUP, DAY, ACTUAL_TIMESLOT, num);
     
     // オフライン委譲レスポンスの処理
     if (response.error === 'offline_delegate' && response.functionName && response.params) {
@@ -260,9 +269,9 @@ async function issueWalkinAnywhere() {
   try {
     let response;
     if (num === 1) {
-      response = await GasAPI.assignWalkInSeat(GROUP, DAY, TIMESLOT);
+      response = await GasAPI.assignWalkInSeat(GROUP, DAY, ACTUAL_TIMESLOT);
     } else {
-      response = await GasAPI.assignWalkInSeats(GROUP, DAY, TIMESLOT, num);
+      response = await GasAPI.assignWalkInSeats(GROUP, DAY, ACTUAL_TIMESLOT, num);
     }
 
     // オフライン委譲レスポンスの処理
