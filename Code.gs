@@ -2047,14 +2047,14 @@ function sendFullCapacityEmail(emailData) {
       return { success: false, message: '満席データが指定されていません' };
     }
     
-    // メール件名
+    // メール件名（分かりやすい形式）
     const subject = isTest ? 
-      '[テスト] 満席通知 - 座席管理システム' : 
-      '満席通知 - 座席管理システム';
+      '[テスト配信] 満席通知 - 座席管理システム' : 
+      '🚨 満席になりました - 座席管理システム';
     
-    // メール本文
+    // メール本文（分かりやすい形式）
     let body = isTest ? 
-      'これはテスト通知です。\n\n' : 
+      'これはテスト配信です。実際の座席状況ではありません。\n\n' : 
       '以下の公演が満席になりました。\n\n';
     
     body += '満席公演一覧:\n';
@@ -2063,7 +2063,7 @@ function sendFullCapacityEmail(emailData) {
     fullTimeslots.forEach(timeslot => {
       body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
       if (timeslot.totalSeats) {
-        body += `  座席数: ${timeslot.totalSeats}席 (満席)\n`;
+        body += `  残り: 0席 / 全${timeslot.totalSeats}席 (満席)\n`;
       }
     });
     
@@ -2072,7 +2072,7 @@ function sendFullCapacityEmail(emailData) {
     body += `システム: 座席管理システム\n`;
     
     if (isTest) {
-      body += '\n※ これはテスト通知です。実際の満席ではありません。\n';
+      body += '\n※ これはテスト配信です。実際の座席状況ではありません。\n';
     }
     
     // 複数アドレスにメール送信
@@ -2145,49 +2145,52 @@ function sendStatusNotificationEmail(emailData) {
     const mediumPriority = notifications.filter(n => n.priority === 'medium');
     const lowPriority = notifications.filter(n => n.priority === 'low');
     
-    // メール件名
-    let subject = '座席状況変化通知 - 座席管理システム';
+    // メール件名（残り席数で分かりやすく）
+    let subject = '座席状況通知 - 座席管理システム';
     if (highPriority.length > 0) {
-      subject = `[緊急] ${subject}`;
+      const minSeats = Math.min(...highPriority.map(n => n.timeslot.emptySeats));
+      subject = `🚨 残り${minSeats}席以下 - 座席管理システム`;
     } else if (mediumPriority.length > 0) {
-      subject = `[重要] ${subject}`;
+      const minSeats = Math.min(...mediumPriority.map(n => n.timeslot.emptySeats));
+      subject = `⚠️ 残り${minSeats}席 - 座席管理システム`;
+    } else if (lowPriority.length > 0) {
+      const minSeats = Math.min(...lowPriority.map(n => n.timeslot.emptySeats));
+      subject = `📊 残り${minSeats}席 - 座席管理システム`;
     }
     
-    // メール本文
-    let body = '座席状況に変化が検知されました。\n\n';
+    // メール本文（分かりやすい形式）
+    let body = '座席状況の変化をお知らせします。\n\n';
     
     // 緊急通知（高優先度）
     if (highPriority.length > 0) {
-      body += '🚨 緊急通知 🚨\n';
+      body += '🚨 残り席数が少なくなっています 🚨\n';
       body += '='.repeat(50) + '\n';
       highPriority.forEach(notification => {
-        const { timeslot, change } = notification;
+        const { timeslot } = notification;
         body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
-        body += `  空席数: ${timeslot.emptySeats}席 / ${timeslot.totalSeats}席\n`;
-        body += `  変化: ${change.type === 'empty_seats' ? `${change.from}席 → ${change.to}席` : change.to}\n`;
-        body += `  状態: ${timeslot.isFull ? '満席' : '空席あり'}\n\n`;
+        body += `  残り: ${timeslot.emptySeats}席 / 全${timeslot.totalSeats}席\n`;
+        body += `  状況: ${timeslot.isFull ? '満席' : '残りわずか'}\n\n`;
       });
     }
     
     // 重要通知（中優先度）
     if (mediumPriority.length > 0) {
-      body += '⚠️ 重要通知 ⚠️\n';
+      body += '⚠️ 残り席数にご注意ください ⚠️\n';
       body += '='.repeat(50) + '\n';
       mediumPriority.forEach(notification => {
-        const { timeslot, change } = notification;
+        const { timeslot } = notification;
         body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}\n`;
-        body += `  空席数: ${timeslot.emptySeats}席 / ${timeslot.totalSeats}席\n`;
-        body += `  変化: ${change.type === 'empty_seats' ? `${change.from}席 → ${change.to}席` : change.to}\n\n`;
+        body += `  残り: ${timeslot.emptySeats}席 / 全${timeslot.totalSeats}席\n\n`;
       });
     }
     
     // 一般通知（低優先度）
     if (lowPriority.length > 0) {
-      body += '📊 状況変化 📊\n';
+      body += '📊 座席状況の変化 📊\n';
       body += '='.repeat(50) + '\n';
       lowPriority.forEach(notification => {
-        const { timeslot, change } = notification;
-        body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}: ${timeslot.emptySeats}席空き\n`;
+        const { timeslot } = notification;
+        body += `・${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot}: 残り${timeslot.emptySeats}席\n`;
       });
     }
     

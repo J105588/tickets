@@ -2,19 +2,19 @@
 // 複数のAPI URL（使用数上限回避のため分散）
 const GAS_API_URLS = [
   //jxjin2010@gmail.com
-  "https://script.google.com/macros/s/AKfycbxl6GhZXb8TrC4ok_MaS-KB19wXF03VR6b3EDX3MV8HOmFUzEYWpB2N53yoeUyUxsEz/exec",
+  "https://script.google.com/macros/s/AKfycbwfHVEZwLbCs_sJ3ckyr6vdCLfI3twmiENbBuSOidMUOLAnGwfmGoyvGLcXihJMu8T1/exec",
   //jxjin.ig.school@gmail.com
-  "https://script.google.com/macros/s/AKfycbxMxkhZDI9gkXPWsQ9gQigFIhr2M3iiXE1S1K7my5ozqMID_xdVHbJiXjffsMhsLgH1/exec",
+  "https://script.google.com/macros/s/AKfycbxGBy7NvMzEdENKL_SYA9Bvk6oq_Fx7_VW2iey0bGFlDfQmGb_-zVP3Gt2pZzJ20m9B/exec",
   //nzn.engeki5@gmail.com
-  "https://script.google.com/macros/s/AKfycbyltPeZae9iD9H61aZxsD6sM5Pce526ZHgi4OPR12BNLm36JrRUQsXDvDgvvCqtnbyR-w/exec",
+  "https://script.google.com/macros/s/AKfycbzig1daBUfYec-GrWVubsTnPQlmgxiWzwLD7s6yz2r8qmIlKFB1jChxTBnKKhXLc9Q7AQ/exec",
   //nzn.engeki5.b@gmail.com
-  "https://script.google.com/macros/s/AKfycbxt7c9FdbmRqerVhQ0e8raIPUNlX-N0xo3l8-40XgXerDpkdWBJzoePFGcuOZnbQZ62/exec",
+  "https://script.google.com/macros/s/AKfycbzlEND5CFpw1zjbuewYt2OxtnOAMFeskfAcig6TOr6uYxzESwUoBuduD_QXVl6OYrNZjw/exec",
   //info.engeki5@gmail.com
-  "https://script.google.com/macros/s/AKfycbz98t8trLuHvpQLCGnIKS7aQX5pRHncbZWLa0K4d9REArnWhNHfQRwzhh-6KKnLjZH2Sw/exec",
+  "https://script.google.com/macros/s/AKfycbyfSRWikWG6U1qV_QUT9JkD-Q-1AxIygbjE7tdH00lDkt0-d7pLPjiPPqXlMdHFgBVuig/exec",
   //engeki.enjitsu@gmail.com
   //"https://script.google.com/macros/s/AKfycbz0gcsEHWPSsoM_tQaGJCHO6ga9Qzu2by81EYA4QRPww8m4QsrSQZ8dZ3WMZoga_yqx/exec"
   // 赤松
-  "https://script.google.com/macros/s/AKfycbytKDw3YBsuvJ97N892Uz2ROdWlPViXVTSDpjNgQlKWyCchcni-ELSfrf8ZsnnHKzHbQg/exec"
+  "https://script.google.com/macros/s/AKfycbxhXhbb42I2QBgtsa239zj6P5xnrq59i-2Q4rX20dl3fmcUMCmG27nfSV8L6PLdLwuKLg/exec"
 ];
 
 // ログ記録用スプレッドシートID
@@ -26,8 +26,10 @@ const LOG_SHEET_NAME = 'OPERATION_LOGS'; // ログを記録するシート名
 // 満席通知用メールアドレス（ハードコーディング）
 const FULL_CAPACITY_NOTIFICATION_EMAILS = [
   'jxjin2010@gmail.com',
-  'jxjin.ig.school@gmail.com',
-  'nzn.engeki5@gmail.com'
+  'nzn.engeki5@gmail.com',
+  'triathlon_makoto@icloud.com',
+  'ichikawagakuen20210109@gmail.com',
+  'ibas72211@gmail.com'
 ];
 
 // 強化監視システム設定
