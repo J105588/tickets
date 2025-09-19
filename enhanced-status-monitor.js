@@ -261,6 +261,11 @@ class EnhancedStatusMonitor {
     const key = `${timeslot.group}|${timeslot.day}|${timeslot.timeslot}`;
     const now = Date.now();
     
+    // 見本演劇はメール送信対象外
+    if (timeslot.group === '見本演劇') {
+      return false;
+    }
+    
     // クールダウンチェック
     const lastNotification = this.notificationHistory.get(key);
     if (lastNotification && (now - lastNotification) < this.notificationCooldown) {

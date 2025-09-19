@@ -1051,7 +1051,12 @@
 
             getAbnormalTimeslots() {
                 if (!this.currentData || !Array.isArray(this.currentData.timeslots)) return [];
-                return this.currentData.timeslots.filter(t => (t.capacityLevel && t.capacityLevel !== 'normal'));
+                return this.currentData.timeslots.filter(t => {
+                    // 見本演劇はメール送信対象外
+                    if (t.group === '見本演劇') return false;
+                    // 異常ステータスのみを対象とする
+                    return t.capacityLevel && t.capacityLevel !== 'normal';
+                });
             }
 
             maybeTriggerScheduledEmail() {
