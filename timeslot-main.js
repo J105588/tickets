@@ -68,6 +68,12 @@ function selectTimeslot(day, timeslot) {
   
   // 現在のモードをLocalStorageから取得
   const currentMode = localStorage.getItem('currentMode') || 'normal';
+
+  // 権限ガード：通常モードでは時間帯を開けません
+  if (currentMode === 'normal') {
+    try { alert('権限がありません：通常モードでは時間帯を開けません。サイドバーのモード変更から管理者/当日券/最高管理者を選択してください。'); } catch (_) {}
+    return;
+  }
   
   let targetPage = 'seats.html';
   let additionalParams = '';
