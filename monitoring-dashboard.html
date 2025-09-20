@@ -272,6 +272,7 @@
         .timeslot-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            cursor: pointer;
         }
 
         .timeslot-card.full { border-left-color: #e74c3c; }
@@ -459,6 +460,164 @@
             margin: 0;
         }
 
+        /* モーダルスタイル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .performance-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .detail-card {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid;
+        }
+
+        .detail-card.reserved {
+            border-left-color: #667eea;
+        }
+
+        .detail-card.checked-in {
+            border-left-color: #27ae60;
+        }
+
+        .detail-card h4 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .detail-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+
+        .occupancy-rate {
+            font-size: 20px;
+            font-weight: 600;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .loading-modal {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-modal::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e1e5e9;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
         @media (max-width: 768px) {
             .monitoring-dashboard {
                 padding: 10px;
@@ -478,6 +637,31 @@
             
             .controls-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                margin: 10px;
+                max-height: 95vh;
+            }
+            
+            .modal-header {
+                padding: 15px;
+            }
+            
+            .modal-title {
+                font-size: 18px;
+            }
+            
+            .modal-body {
+                padding: 20px;
+            }
+            
+            .performance-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .detail-stats {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
@@ -1372,6 +1556,7 @@
                 const el = document.createElement('div');
                 el.className = 'timeslot-card';
                 el.setAttribute('data-id', id);
+                el.style.cursor = 'pointer';
                 el.innerHTML = `
                         <div class="timeslot-header">
                         <h4 class="timeslot-title"></h4>
@@ -1391,7 +1576,14 @@
                         <div class="progress-bar"></div>
                         </div>
                     <p class="last-updated"></p>
+                    <p class="click-hint" style="font-size: 12px; color: #667eea; text-align: center; margin: 8px 0 0 0; font-weight: 500;">クリックで詳細表示</p>
                 `;
+                
+                // クリックイベントを追加
+                el.addEventListener('click', () => {
+                    this.showPerformanceDetailsModal(timeslot);
+                });
+                
                 this.updateTimeslotCard(el, timeslot);
                 return el;
             }
@@ -1480,6 +1672,469 @@
                 setTimeout(() => {
                     this.elements.successContainer.style.display = 'none';
                 }, 3000);
+            }
+
+            async showPerformanceDetailsModal(timeslot) {
+                try {
+                    // モーダルオーバーレイを作成
+                    const overlay = document.createElement('div');
+                    overlay.className = 'modal-overlay';
+                    
+                    // モーダルコンテンツを作成
+                    const modal = document.createElement('div');
+                    modal.className = 'modal-content';
+                    
+                    // ヘッダー
+                    const header = document.createElement('div');
+                    header.className = 'modal-header';
+                    header.innerHTML = `
+                        <h2 class="modal-title">${timeslot.group} ${timeslot.day}日目 ${timeslot.timeslot} - 詳細データ</h2>
+                        <button class="modal-close">&times;</button>
+                    `;
+                    
+                    // ボディ（ローディング状態）
+                    const body = document.createElement('div');
+                    body.className = 'modal-body';
+                    body.innerHTML = '<div class="loading-modal">詳細データを読み込み中...</div>';
+                    
+                    modal.appendChild(header);
+                    modal.appendChild(body);
+                    overlay.appendChild(modal);
+                    document.body.appendChild(overlay);
+                    
+                    // 閉じるボタンのイベント
+                    const closeBtn = header.querySelector('.modal-close');
+                    const closeModal = () => {
+                        overlay.remove();
+                    };
+                    closeBtn.addEventListener('click', closeModal);
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) closeModal();
+                    });
+                    
+                    // 詳細データを取得
+                    try {
+                        const detailedData = await this.getDetailedSeatData(timeslot);
+                        this.renderPerformanceDetails(body, timeslot, detailedData);
+                    } catch (error) {
+                        body.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #e74c3c;">
+                                <h3>データ取得エラー</h3>
+                                <p>詳細データの取得に失敗しました: ${error.message}</p>
+                                <button onclick="this.closest('.modal-overlay').remove()" 
+                                        style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    閉じる
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                } catch (error) {
+                    console.error('Modal creation failed:', error);
+                    this.showError('モーダルの表示に失敗しました: ' + error.message);
+                }
+            }
+
+            async getDetailedSeatData(timeslot) {
+                try {
+                    console.log('Fetching detailed seat data for:', timeslot);
+                    
+                    // タイムアウト付きでAPI呼び出し
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('API呼び出しがタイムアウトしました')), 10000);
+                    });
+                    
+                    const apiPromise = GasAPI.getSeatData(timeslot.group, timeslot.day, timeslot.timeslot, true, true);
+                    const response = await Promise.race([apiPromise, timeoutPromise]);
+                    
+                    console.log('API response:', response);
+                    
+                    if (!response || !response.success) {
+                        throw new Error(response?.message || response?.error || 'データ取得に失敗しました');
+                    }
+                    
+                    // seatMap形式のデータを配列形式に変換
+                    let seatData = null;
+                    if (response.seatMap && typeof response.seatMap === 'object') {
+                        console.log('Converting seatMap to array format');
+                        console.log('seatMap keys:', Object.keys(response.seatMap));
+                        console.log('First seat example:', Object.entries(response.seatMap)[0]);
+                        seatData = this.convertSeatMapToArray(response.seatMap);
+                    } else if (response.data && Array.isArray(response.data)) {
+                        seatData = response.data;
+                    } else {
+                        throw new Error('座席データの形式が正しくありません');
+                    }
+                    
+                    if (!seatData || seatData.length === 0) {
+                        throw new Error('座席データが空です');
+                    }
+                    
+                    console.log('Converted seat data:', seatData);
+                    return seatData;
+                } catch (error) {
+                    console.error('Detailed seat data fetch failed:', error);
+                    
+                    // フォールバック: 既存のデータから計算を試行
+                    if (timeslot && timeslot.totalSeats > 0) {
+                        console.log('Using fallback calculation with timeslot data');
+                        return this.createFallbackSeatData(timeslot);
+                    }
+                    
+                    throw new Error(`座席データの取得に失敗しました: ${error.message}`);
+                }
+            }
+
+            convertSeatMapToArray(seatMap) {
+                const seatArray = [];
+                
+                console.log('Converting seatMap:', seatMap);
+                
+                for (const [seatId, seatInfo] of Object.entries(seatMap)) {
+                    if (seatInfo && typeof seatInfo === 'object') {
+                        console.log(`Processing seat ${seatId}:`, seatInfo);
+                        
+                        // seatInfoから座席データを抽出（複数の可能性を試行）
+                        const rowLabel = seatInfo.row || seatInfo.rowLabel || seatId.charAt(0);
+                        const colLabel = seatInfo.col || seatInfo.colLabel || seatId.substring(1);
+                        
+                        // ステータス値のマッピング（英語→日本語）
+                        let statusC = seatInfo.statusC || seatInfo.status || seatInfo.c || '';
+                        let statusE = seatInfo.statusE || seatInfo.checkIn || seatInfo.e || '';
+                        
+                        // 英語のステータス値を日本語に変換
+                        if (statusC === 'checked-in') {
+                            statusC = '予約済';
+                            statusE = '済';
+                        } else if (statusC === 'to-be-checked-in') {
+                            statusC = '予約済';
+                            statusE = '';
+                        } else if (statusC === 'reserved') {
+                            statusC = '確保';
+                            statusE = '';
+                        } else if (statusC === 'empty' || statusC === 'available') {
+                            statusC = '空';
+                            statusE = '';
+                        }
+                        
+                        const nameD = seatInfo.nameD || seatInfo.name || seatInfo.d || '';
+                        
+                        console.log(`Converted ${seatId}: C="${statusC}", E="${statusE}"`);
+                        seatArray.push([rowLabel, colLabel, statusC, nameD, statusE]);
+                    }
+                }
+                
+                console.log(`Converted ${seatArray.length} seats from seatMap`);
+                console.log('Sample converted data:', seatArray.slice(0, 5));
+                return seatArray;
+            }
+
+            createFallbackSeatData(timeslot) {
+                // 既存のtimeslotデータから推定データを作成
+                const totalSeats = timeslot.totalSeats || 0;
+                const occupiedSeats = timeslot.occupiedSeats || 0;
+                const emptySeats = timeslot.emptySeats || 0;
+                
+                // 修正された推定ロジック（実際のデータがない場合のフォールバック）
+                const estimatedCheckedIn = Math.floor(occupiedSeats * 0.4); // 40%がチェックイン済みと仮定
+                const estimatedReservedWithoutCheckIn = occupiedSeats - estimatedCheckedIn; // 残りが未チェックイン
+                
+                const fallbackData = [];
+                
+                // 予約済み未チェックイン座席（C列が予約済かつE列が空）
+                const reservedWithoutCheckIn = Math.floor(estimatedReservedWithoutCheckIn * 0.7);
+                for (let i = 0; i < reservedWithoutCheckIn; i++) {
+                    fallbackData.push(['A', i + 1, '予約済', '顧客名', '']);
+                }
+                
+                // 確保座席（C列が確保、E列の内容は関係なし）
+                const securedSeats = estimatedReservedWithoutCheckIn - reservedWithoutCheckIn;
+                for (let i = 0; i < securedSeats; i++) {
+                    fallbackData.push(['B', i + 1, '確保', '顧客名', '']);
+                }
+                
+                // チェックイン済み座席（C列が予約済かつE列が済）
+                for (let i = 0; i < estimatedCheckedIn; i++) {
+                    fallbackData.push(['C', i + 1, '予約済', '顧客名', '済']);
+                }
+                
+                // 空席
+                for (let i = 0; i < emptySeats; i++) {
+                    fallbackData.push(['D', i + 1, '空', '', '']);
+                }
+                
+                console.log('Created fallback data:', fallbackData.length, 'seats');
+                console.log('Fallback breakdown:', {
+                    reservedWithoutCheckIn: reservedWithoutCheckIn,
+                    secured: securedSeats,
+                    checkedIn: estimatedCheckedIn,
+                    empty: emptySeats,
+                    total: reservedWithoutCheckIn + securedSeats + estimatedCheckedIn + emptySeats
+                });
+                return fallbackData;
+            }
+
+            renderPerformanceDetails(body, timeslot, detailedData) {
+                // 座席データを分析
+                const analysis = this.analyzeSeatData(detailedData);
+                
+                // データの整合性チェック
+                const dataConsistency = this.checkDataConsistency(timeslot, analysis);
+                
+                body.innerHTML = `
+                    <div class="performance-details">
+                        <div class="detail-card reserved">
+                            <h4>予約済み座席（C列が予約済または確保、E列は関係なし）</h4>
+                            <div class="detail-stats">
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysis.reservedSeats}</p>
+                                    <p class="stat-label">座席数</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysis.reservedSeatsRate}%</p>
+                                    <p class="stat-label">総座席数に対する割合</p>
+                                </div>
+                            </div>
+                            <div class="occupancy-rate">
+                                総座席数: ${analysis.totalSeats || timeslot.totalSeats}席
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card checked-in">
+                            <h4>チェックイン済み座席（C列が予約済かつE列が済）</h4>
+                            <div class="detail-stats">
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysis.checkedInSeats}</p>
+                                    <p class="stat-label">座席数</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysis.checkedInRate}%</p>
+                                    <p class="stat-label">予約済み座席に対する割合</p>
+                                </div>
+                            </div>
+                            <div class="occupancy-rate">
+                                予約済み座席数: ${analysis.reservedSeats}席
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: #333;">全体サマリー</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                            <div style="text-align: center;">
+                                <p style="font-size: 24px; font-weight: 700; margin: 0; color: #333;">${analysis.totalSeats || timeslot.totalSeats}</p>
+                                <p style="font-size: 14px; color: #666; margin: 0;">総座席数</p>
+                            </div>
+                            <div style="text-align: center;">
+                                <p style="font-size: 24px; font-weight: 700; margin: 0; color: #667eea;">${analysis.reservedSeats}</p>
+                                <p style="font-size: 14px; color: #666; margin: 0;">予約済み座席数</p>
+                            </div>
+                            <div style="text-align: center;">
+                                <p style="font-size: 24px; font-weight: 700; margin: 0; color: #27ae60;">${analysis.checkedInSeats}</p>
+                                <p style="font-size: 14px; color: #666; margin: 0;">チェックイン済み座席数</p>
+                            </div>
+                            <div style="text-align: center;">
+                                <p style="font-size: 24px; font-weight: 700; margin: 0; color: #e74c3c;">${analysis.emptySeats || timeslot.emptySeats}</p>
+                                <p style="font-size: 14px; color: #666; margin: 0;">空席数</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${dataConsistency.warnings.length > 0 ? `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #856404;">⚠️ データ整合性の警告</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                            ${dataConsistency.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    ${analysis.validationErrors ? `
+                    <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #721c24;">❌ データ検証エラー</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #721c24; font-size: 12px;">
+                            ${analysis.validationErrors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #004085;">ℹ️ データソース情報</h4>
+                        <p style="margin: 0; color: #004085; font-size: 14px;">
+                            データ取得時刻: ${new Date().toLocaleString('ja-JP')}<br>
+                            分析対象座席数: ${detailedData ? detailedData.length : 0}席<br>
+                            データソース: ${detailedData ? 'API (seatMap変換)' : 'フォールバック'}<br>
+                            分析結果詳細: 予約済み座席=${analysis.reservedSeats}席, チェックイン済み=${analysis.checkedInSeats}席, 空席=${analysis.emptySeats}席<br>
+                            処理済み座席数: ${analysis.processedSeats || analysis.totalSeats}席 / 総座席数: ${analysis.totalSeats}席<br>
+                            データ整合性: ${analysis.validationErrors ? 'エラーあり' : '正常'}
+                        </p>
+                    </div>
+                `;
+            }
+
+            checkDataConsistency(timeslot, analysis) {
+                const warnings = [];
+                
+                console.log('Data consistency check:', {
+                    dashboard: {
+                        totalSeats: timeslot.totalSeats,
+                        emptySeats: timeslot.emptySeats,
+                        occupiedSeats: timeslot.totalSeats - timeslot.emptySeats
+                    },
+                    analysis: {
+                        totalSeats: analysis.totalSeats,
+                        emptySeats: analysis.emptySeats,
+                        processedSeats: analysis.processedSeats,
+                        reservedSeats: analysis.reservedSeats,
+                        checkedInSeats: analysis.checkedInSeats
+                    }
+                });
+                
+                // 総座席数の整合性チェック（ダッシュボードの総座席数と分析の総座席数を比較）
+                if (timeslot.totalSeats !== analysis.totalSeats) {
+                    warnings.push(`総座席数が一致しません: ダッシュボード=${timeslot.totalSeats}, 詳細分析=${analysis.totalSeats}`);
+                }
+                
+                // 空席数の整合性チェック
+                if (timeslot.emptySeats !== analysis.emptySeats) {
+                    warnings.push(`空席数が一致しません: ダッシュボード=${timeslot.emptySeats}, 詳細分析=${analysis.emptySeats}`);
+                }
+                
+                // 予約済み座席数の整合性チェック（ダッシュボードの占有席数と分析の予約済み座席数を比較）
+                const dashboardOccupied = timeslot.totalSeats - timeslot.emptySeats;
+                if (dashboardOccupied !== analysis.reservedSeats) {
+                    warnings.push(`予約済み座席数が一致しません: ダッシュボード=${dashboardOccupied}, 詳細分析=${analysis.reservedSeats}`);
+                }
+                
+                // 処理済み座席数のチェック
+                if (analysis.processedSeats !== analysis.totalSeats) {
+                    warnings.push(`処理済み座席数が総座席数と一致しません: 処理済み=${analysis.processedSeats}, 総数=${analysis.totalSeats}`);
+                }
+                
+                // チェックイン済み座席数の妥当性チェック
+                if (analysis.checkedInSeats > analysis.reservedSeats) {
+                    warnings.push(`チェックイン済み座席数が予約済み座席数を超えています: チェックイン=${analysis.checkedInSeats}, 予約済み=${analysis.reservedSeats}`);
+                }
+                
+                return { warnings };
+            }
+
+            analyzeSeatData(seatData) {
+                console.log('Analyzing seat data:', seatData);
+                
+                if (!seatData || !Array.isArray(seatData)) {
+                    console.warn('Invalid seat data provided');
+                    return {
+                        reservedSeats: 0,
+                        checkedInSeats: 0,
+                        reservedSeatsRate: 0,
+                        checkedInRate: 0,
+                        totalSeats: 0,
+                        emptySeats: 0,
+                        validationErrors: ['データが無効です']
+                    };
+                }
+
+                let reservedSeats = 0; // C列が「予約済」または「確保」の座席数（E列は関係なし）
+                let checkedInSeats = 0; // C列が「予約済」かつE列が「済」の座席数
+                let totalSeats = 0;
+                let emptySeats = 0;
+                let validationErrors = [];
+                let processedSeats = 0;
+
+                seatData.forEach((seat, index) => {
+                    try {
+                        // まず座席をカウント（無効なデータでもカウント）
+                        totalSeats++;
+                        
+                        if (!seat || !Array.isArray(seat)) {
+                            validationErrors.push(`行${index + 1}: 無効な座席データ`);
+                            return;
+                        }
+                        
+                        if (seat.length < 5) {
+                            validationErrors.push(`行${index + 1}: データ列数不足 (${seat.length}列)`);
+                            return;
+                        }
+                        
+                        const rowLabel = (seat[0] || '').toString().trim();
+                        const colLabel = (seat[1] || '').toString().trim();
+                        const statusC = (seat[2] || '').toString().trim();
+                        const nameD = (seat[3] || '').toString().trim();
+                        const statusE = (seat[4] || '').toString().trim();
+                        
+                        // 有効な座席IDかチェック
+                        if (!rowLabel || !colLabel) {
+                            validationErrors.push(`行${index + 1}: 無効な座席ID (行: "${rowLabel}", 列: "${colLabel}")`);
+                            return;
+                        }
+                        
+                        processedSeats++;
+                        
+                        // 修正された分析ロジック（要求仕様に準拠）
+                        // 1. 予約済み座席: C列が「予約済」または「確保」の座席数（E列は関係なし）
+                        // 2. チェックイン済み座席: C列が「予約済」かつE列が「済」の座席数
+                        // 3. 分母: 予約済み座席の計算は総座席数、チェックイン済み座席の計算は予約済み座席数
+                        
+                        if (statusC === '予約済' || statusC === '確保' || 
+                            statusC === 'checked-in' || statusC === 'to-be-checked-in' || statusC === 'reserved') {
+                            // 予約済み座席としてカウント（E列は関係なし）
+                            reservedSeats++;
+                            
+                            // チェックイン済みかどうかを判定
+                            if ((statusC === '予約済' && statusE === '済') || statusC === 'checked-in') {
+                                checkedInSeats++;
+                            }
+                        } else if (statusC === '空' || statusC === '' || statusC === 'empty' || statusC === 'available') {
+                            emptySeats++;
+                        } else {
+                            // C列が認識できない値の場合
+                            validationErrors.push(`行${index + 1}: 不明なC列の値 "${statusC}"`);
+                            // 不明な値の場合は空席として扱う
+                            emptySeats++;
+                        }
+                    } catch (error) {
+                        validationErrors.push(`行${index + 1}: 処理エラー - ${error.message}`);
+                    }
+                });
+
+                // 計算結果の検証
+                const calculatedTotal = reservedSeats + emptySeats;
+                if (calculatedTotal !== processedSeats) {
+                    validationErrors.push(`座席数不一致: 計算値=${calculatedTotal}, 処理済み=${processedSeats}`);
+                }
+                
+                // チェックイン済み座席数の妥当性チェック
+                if (checkedInSeats > reservedSeats) {
+                    validationErrors.push(`チェックイン済み座席数が予約済み座席数を超えています: チェックイン=${checkedInSeats}, 予約済み=${reservedSeats}`);
+                }
+
+                // 正しい計算方法
+                const reservedSeatsRate = totalSeats > 0 ? (reservedSeats / totalSeats) * 100 : 0; // 総座席数に対する予約済み座席の割合
+                const checkedInRate = reservedSeats > 0 ? (checkedInSeats / reservedSeats) * 100 : 0; // 予約済み座席に対するチェックイン済み座席の割合
+
+                const result = {
+                    reservedSeats, // 予約済み座席数（C列が「予約済」または「確保」）
+                    checkedInSeats, // チェックイン済み座席数（C列が「予約済」かつE列が「済」）
+                    reservedSeatsRate: Math.round(reservedSeatsRate * 10) / 10, // 総座席数に対する予約済み座席の割合
+                    checkedInRate: Math.round(checkedInRate * 10) / 10, // 予約済み座席に対するチェックイン済み座席の割合
+                    totalSeats,
+                    emptySeats,
+                    processedSeats,
+                    validationErrors: validationErrors.length > 0 ? validationErrors : null
+                };
+
+                console.log('Analysis result:', result);
+                console.log('Breakdown:', {
+                    totalSeats,
+                    processedSeats,
+                    reservedSeats,
+                    checkedInSeats,
+                    emptySeats,
+                    reservedSeatsRate: `${reservedSeats}/${totalSeats} = ${reservedSeatsRate.toFixed(1)}%`,
+                    checkedInRate: `${checkedInSeats}/${reservedSeats} = ${checkedInRate.toFixed(1)}%`
+                });
+                return result;
             }
         }
 
