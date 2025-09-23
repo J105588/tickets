@@ -1388,58 +1388,58 @@ graph TD
   - メインシステムと同期した時間帯データ
   - 依存: なし（OfflineCode.gsから参照される）
 
-### 📊 ファイルサイズ情報（v2.3 実際の数値）
+### 📊 ファイルサイズ情報（最新計測）
 
 | ファイル | サイズ (行) | 説明 |
 |----------|-------------|------|
 | **.gitignore** | 1 | Git除外設定 |
-| **CNAME** | 0 | カスタムドメイン設定 |
-| **Code.gs** | 2,475 | メインAPI処理とビジネスロジック |
+| **CNAME** | 1 | カスタムドメイン設定 |
+| **Code.gs** | 2,331 | メインAPI処理とビジネスロジック |
 | **LICENSE** | 21 | ライセンス情報 |
-| **README.md** | 2,000+ | プロジェクトドキュメント（大幅拡張・最新版） |
-| **SpreadsheetIds.gs** | 120 | スプレッドシートID管理 |
-| **TimeSlotConfig.gs** | 95 | 時間帯設定管理 |
-| **system-setting.gs** | 71 | システム設定ユーティリティ |
-| **api.js** | 603 | GAS API呼び出し機能 |
-| **optimized-api.js** | 321 | 最適化されたAPI呼び出し機能 |
-| **api-cache.js** | 291 | インテリジェントキャッシュシステム |
-| **optimized-loader.js** | 163 | 最適化されたスクリプトローダー |
-| **ui-optimizer.js** | 369 | UI応答性の最適化 |
-| **performance-monitor.js** | 288 | パフォーマンス監視 |
-| **enhanced-status-monitor.js** | 450 | 強化座席監視システム（見本演劇除外機能追加） |
-| **audit-logger.js** | 250 | 監査ログシステム |
-| **config.js** | 304 | システム設定とURL管理機能 |
-| **error-handler.js** | 208 | エラーハンドリング機能 |
-| **system-lock.js** | 108 | システムロック機能 |
-| **pwa-update.js** | 480 | PWA更新通知システム |
-| **pwa-install.js** | 187 | PWAインストール促進機能 |
-| **full-capacity-monitor.js** | 268 | 満席監視システム |
-| **offline-sync-v2.js** | 3,246 | オフライン同期システム（v2.0） |
+| **README.md** | 1,472 | プロジェクトドキュメント |
+| **SpreadsheetIds.gs** | 110 | スプレッドシートID管理 |
+| **TimeSlotConfig.gs** | 83 | 時間帯設定管理 |
+| **system-setting.gs** | 62 | システム設定ユーティリティ |
+| **api.js** | 575 | GAS API呼び出し機能 |
+| **optimized-api.js** | 304 | 最適化されたAPI呼び出し機能 |
+| **api-cache.js** | 270 | インテリジェントキャッシュシステム |
+| **optimized-loader.js** | 160 | 最適化されたスクリプトローダー |
+| **ui-optimizer.js** | 343 | UI応答性の最適化 |
+| **performance-monitor.js** | 279 | パフォーマンス監視 |
+| **enhanced-status-monitor.js** | 419 | 強化座席監視システム（見本演劇除外機能追加） |
+| **audit-logger.js** | 245 | 監査ログシステム |
+| **config.js** | 344 | システム設定とURL管理機能 |
+| **error-handler.js** | 194 | エラーハンドリング機能 |
+| **system-lock.js** | 102 | システムロック機能 |
+| **pwa-update.js** | 474 | PWA更新通知システム |
+| **pwa-install.js** | 182 | PWAインストール促進機能 |
+| **full-capacity-monitor.js** | 253 | 満席監視システム |
+| **offline-sync-v2.js** | 3,079 | オフライン同期システム（v2.0） |
 | **offline-sync-v2.css** | 896 | オフライン同期UI |
-| **offline-sync.js** | 571 | 旧オフライン同期システム |
-| **sw.js** | 213 | Service Worker（v2.3 PWA更新対応版） |
-| **index.html** | 408 | 組選択ページ（PWA更新通知機能追加） |
-| **index-main.js** | 20 | 組選択ページのメインロジック |
-| **timeslot.html** | 400 | 時間帯選択ページ |
-| **timeslot-main.js** | 191 | 時間帯選択ページのメインロジック |
-| **timeslot-schedules.js** | 144 | 時間帯スケジュール定義 |
-| **seats.html** | 439 | 座席選択・予約ページ |
-| **seats-main.js** | 1,771 | 座席選択・予約ページのメインロジック |
+| **offline-sync.js** | 544 | 旧オフライン同期システム |
+| **sw.js** | 201 | Service Worker（v2.3 PWA更新対応版） |
+| **index.html** | 399 | 組選択ページ（PWA更新通知機能追加） |
+| **index-main.js** | 18 | 組選択ページのメインロジック |
+| **timeslot.html** | 392 | 時間帯選択ページ |
+| **timeslot-main.js** | 186 | 時間帯選択ページのメインロジック |
+| **timeslot-schedules.js** | 93 | 時間帯スケジュール定義 |
+| **seats.html** | 431 | 座席選択・予約ページ |
+| **seats-main.js** | 1,670 | 座席選択・予約ページのメインロジック |
 | **seats.css** | 863 | 座席選択ページ専用スタイル |
-| **walkin.html** | 442 | 当日券発行ページ |
-| **walkin-main.js** | 465 | 当日券発行ページのメインロジック |
+| **walkin.html** | 434 | 当日券発行ページ |
+| **walkin-main.js** | 453 | 当日券発行ページのメインロジック |
 | **walkin.css** | 317 | 当日券ページ専用スタイル |
-| **logs.html** | 343 | 操作ログ表示ページ |
-| **logs-main.js** | 908 | 操作ログ表示ページのメインロジック |
+| **logs.html** | 342 | 操作ログ表示ページ |
+| **logs-main.js** | 866 | 操作ログ表示ページのメインロジック |
 | **logs.css** | 634 | ログページ専用スタイル |
-| **monitoring-dashboard.html** | 2,149 | 強化監視ダッシュボード（詳細モーダル表示・正確な演算システム追加） |
-| **sidebar.js** | 360 | サイドバーとモード管理機能 |
+| **monitoring-dashboard.html** | 2,994 | 強化監視ダッシュボード（詳細モーダル表示・正確な演算システム追加） |
+| **sidebar.js** | 355 | サイドバーとモード管理機能 |
 | **sidebar.css** | 249 | サイドバー専用スタイル |
 | **styles.css** | 302 | 全体共通スタイル |
 | **manifest.json** | 83 | PWAマニフェスト |
 | **browserconfig.xml** | 9 | ブラウザ設定 |
 
-**合計: 25,000+行**（v2.3で大幅に拡張・詳細モーダル表示・正確な演算システム追加）
+**合計: 24,035行**（最新計測）
 
 ### 🔗 依存関係図（v2.3 最新）
 ```mermaid
