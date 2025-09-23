@@ -567,6 +567,8 @@ class GasAPI {
     return response;
   }
 
+
+
   // 危険コマンド実行
 }
 

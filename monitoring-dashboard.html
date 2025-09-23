@@ -460,6 +460,152 @@
             margin: 0;
         }
 
+        /* クラス別分析パネル */
+        .class-analysis-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .class-analysis-panel h3 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .class-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .class-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .class-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .class-button:active {
+            transform: translateY(-1px);
+        }
+
+        .class-button.loading {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .class-button.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .class-button .class-name {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .class-button .class-stats {
+            display: block;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .class-button .class-description {
+            display: block;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* ネットワーク状態インジケーター */
+        .network-status-indicator {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(243, 156, 18, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .network-status-indicator.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
+        }
+
+        .network-status-indicator.success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            box-shadow: 0 2px 10px rgba(39, 174, 96, 0.3);
+            animation: none;
+        }
+
+        .network-status-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .network-status-icon {
+            font-size: 20px;
+        }
+
+        .network-status-text {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .network-retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .network-retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
         /* モーダルスタイル */
         .modal-overlay {
             position: fixed;
@@ -559,11 +705,26 @@
             border-left-color: #27ae60;
         }
 
+        .detail-card.warning {
+            border-left-color: #f39c12;
+        }
+
         .detail-card h4 {
             margin: 0 0 15px 0;
             font-size: 18px;
             font-weight: 600;
             color: #333;
+        }
+
+        .checkin-rate-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #27ae60;
+            text-align: center;
         }
 
         .detail-stats {
@@ -639,6 +800,27 @@
                 grid-template-columns: 1fr;
             }
             
+            .class-buttons-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .class-button {
+                padding: 15px;
+                font-size: 14px;
+            }
+            
+            .class-button .class-name {
+                font-size: 16px;
+            }
+            
+            .class-button .class-stats {
+                font-size: 13px;
+            }
+            
+            .class-button .class-description {
+                font-size: 11px;
+            }
+            
             .modal-content {
                 margin: 10px;
                 max-height: 95vh;
@@ -679,6 +861,15 @@
 
         <div id="success-container" class="success-message" style="display: none;">
             <span id="success-message"></span>
+        </div>
+
+        <!-- ネットワーク状態インジケーター -->
+        <div id="network-status" class="network-status-indicator" style="display: none;">
+            <div class="network-status-content">
+                <span class="network-status-icon">🌐</span>
+                <span class="network-status-text">ネットワーク接続を確認中...</span>
+                <button class="network-retry-btn" onclick="window.MonitoringDashboard.retryConnection()">再試行</button>
+            </div>
         </div>
 
         <!-- ステータスインジケーター -->
@@ -818,6 +1009,14 @@
             </div>
         </div>
 
+        <!-- クラス別分析パネル -->
+        <div class="class-analysis-panel">
+            <h3>クラス別分析</h3>
+            <div class="class-buttons-container">
+                <div class="loading">クラス情報を読み込み中...</div>
+            </div>
+        </div>
+
         <!-- 公演一覧 -->
         <div id="timeslots-container">
             <div class="loading">座席データを読み込み中...</div>
@@ -840,6 +1039,7 @@
                 this.lastEmailSignature = '';
                 this.latestTimeslotMap = new Map();
                 this.urlRotationInterval = null;
+                this.offlineCheckInterval = null;
                 
                 this.initializeElements();
                 this.bindEvents();
@@ -868,7 +1068,10 @@
                     apiUrlLabel: document.getElementById('api-url-label'),
                     apiUrlMeta: document.getElementById('api-url-meta'),
                     apiUrlRefresh: document.getElementById('api-url-refresh'),
-                    apiUrlRandom: document.getElementById('api-url-random')
+                    apiUrlRandom: document.getElementById('api-url-random'),
+                    classButtonsContainer: document.querySelector('.class-buttons-container'),
+                    networkStatus: document.getElementById('network-status'),
+                    networkStatusText: document.querySelector('.network-status-text')
                 };
             }
 
@@ -914,6 +1117,13 @@
             async loadInitialData() {
                 try {
                     this.showLoading();
+                    
+                    // ネットワーク接続状態をチェック
+                    if (!this.checkNetworkConnection()) {
+                        await this.handleOfflineMode();
+                        return;
+                    }
+                    
                     const response = await GasAPI.getDetailedCapacityAnalysis();
                     if (response.success) {
                         this.currentData = response.analysis;
@@ -929,9 +1139,22 @@
                         // フォールバック: 簡易データで表示を継続
                         await this.loadWithFallback('データの読み込みに失敗しました: ' + (response.message || '')); 
                     }
+                    
+                    // クラス別分析の初期化
+                    await this.initializeClassAnalysis();
                 } catch (error) {
-                    // フォールバック: タイムアウト/ネットワーク例外時
-                    await this.loadWithFallback('データの読み込み中にエラーが発生しました: ' + error.message);
+                    console.error('Initial data load error:', error);
+                    
+                    // ネットワークエラーの場合は特別な処理
+                    if (this.isNetworkError(error)) {
+                        await this.handleNetworkError(error);
+                    } else {
+                        // フォールバック: タイムアウト/ネットワーク例外時
+                        await this.loadWithFallback('データの読み込み中にエラーが発生しました: ' + error.message);
+                    }
+                    
+                    // エラー時もクラス別分析を試行
+                    await this.initializeClassAnalysis();
                 }
             }
 
@@ -1735,13 +1958,15 @@
                 }
             }
 
-            async getDetailedSeatData(timeslot) {
+            async getDetailedSeatData(timeslot, retryCount = 0) {
+                const maxRetries = 2;
+                
                 try {
-                    console.log('Fetching detailed seat data for:', timeslot);
+                    console.log(`Fetching detailed seat data for: ${timeslot.day}日目 ${timeslot.timeslot} (attempt ${retryCount + 1})`);
                     
-                    // タイムアウト付きでAPI呼び出し
+                    // タイムアウト付きでAPI呼び出し（クラス分析用に延長）
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('API呼び出しがタイムアウトしました')), 10000);
+                        setTimeout(() => reject(new Error('API呼び出しがタイムアウトしました')), 8000);
                     });
                     
                     const apiPromise = GasAPI.getSeatData(timeslot.group, timeslot.day, timeslot.timeslot, true, true);
@@ -1773,7 +1998,14 @@
                     console.log('Converted seat data:', seatData);
                     return seatData;
                 } catch (error) {
-                    console.error('Detailed seat data fetch failed:', error);
+                    console.error(`Detailed seat data fetch failed (attempt ${retryCount + 1}):`, error);
+                    
+                    // リトライ可能な場合
+                    if (retryCount < maxRetries) {
+                        console.log(`Retrying in 1 second... (${retryCount + 1}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return this.getDetailedSeatData(timeslot, retryCount + 1);
+                    }
                     
                     // フォールバック: 既存のデータから計算を試行
                     if (timeslot && timeslot.totalSeats > 0) {
@@ -2135,6 +2367,699 @@
                     checkedInRate: `${checkedInSeats}/${reservedSeats} = ${checkedInRate.toFixed(1)}%`
                 });
                 return result;
+            }
+
+            // クラス別分析の初期化
+            async initializeClassAnalysis() {
+                try {
+                    if (!this.elements.classButtonsContainer) {
+                        console.warn('Class buttons container not found');
+                        return;
+                    }
+
+                    // 既存のデータからクラス一覧を取得
+                    const classes = this.extractClassesFromData();
+                    if (classes.length === 0) {
+                        this.elements.classButtonsContainer.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">クラス情報が見つかりませんでした</p>';
+                        return;
+                    }
+
+                    this.renderClassButtons(classes);
+                } catch (error) {
+                    console.error('Class analysis initialization failed:', error);
+                    if (this.elements.classButtonsContainer) {
+                        this.elements.classButtonsContainer.innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 20px;">クラス分析の初期化に失敗しました</p>';
+                    }
+                }
+            }
+
+            // データからクラス一覧を抽出
+            extractClassesFromData() {
+                const classes = new Set();
+                
+                // 現在のデータからクラスを抽出
+                if (this.currentData && this.currentData.timeslots) {
+                    this.currentData.timeslots.forEach(timeslot => {
+                        if (timeslot.group) {
+                            classes.add(timeslot.group);
+                        }
+                    });
+                }
+
+                // 既存のtimeslotMapからも抽出
+                this.latestTimeslotMap.forEach(timeslot => {
+                    if (timeslot.group) {
+                        classes.add(timeslot.group);
+                    }
+                });
+
+                return Array.from(classes).sort();
+            }
+
+            // クラスボタンをレンダリング
+            renderClassButtons(classes) {
+                const buttonsHtml = classes.map(group => {
+                    const classData = this.getClassSummary(group);
+                    return `
+                        <button class="class-button" data-group="${group}" onclick="window.MonitoringDashboard.showClassAnalysis('${group}')">
+                            <span class="class-name">${group}組</span>
+                            <span class="class-stats">公演数: ${classData.totalPerformances}件</span>
+                            <span class="class-description">総座席: ${classData.totalSeats}席 | 空席: ${classData.totalEmptySeats}席</span>
+                        </button>
+                    `;
+                }).join('');
+
+                this.elements.classButtonsContainer.innerHTML = buttonsHtml;
+            }
+
+            // クラスのサマリー情報を取得
+            getClassSummary(group) {
+                const classTimeslots = Array.from(this.latestTimeslotMap.values())
+                    .filter(timeslot => timeslot.group === group);
+
+                const totalPerformances = classTimeslots.length;
+                const totalSeats = classTimeslots.reduce((sum, t) => sum + (t.totalSeats || 0), 0);
+                const totalEmptySeats = classTimeslots.reduce((sum, t) => sum + (t.emptySeats || 0), 0);
+                const totalOccupiedSeats = classTimeslots.reduce((sum, t) => sum + (t.occupiedSeats || 0), 0);
+
+                return {
+                    totalPerformances,
+                    totalSeats,
+                    totalEmptySeats,
+                    totalOccupiedSeats
+                };
+            }
+
+            // クラス別分析を表示
+            async showClassAnalysis(group) {
+                try {
+                    const button = document.querySelector(`[data-group="${group}"]`);
+                    if (button) {
+                        button.classList.add('loading');
+                        button.disabled = true;
+                    }
+
+                    console.log(`Starting class analysis for group: ${group}`);
+                    
+                    // プログレス表示を追加
+                    this.showProgress(`クラス ${group} の分析を開始しています...`);
+                    
+                    // 既存データから分析（API関数が存在しないため、直接フォールバック方式を使用）
+                    const classData = await this.analyzeClassFromExistingData(group);
+                    
+                    // プログレスを非表示
+                    this.hideProgress();
+                    
+                    this.showClassAnalysisModal(group, classData);
+                    
+                } catch (error) {
+                    console.error('Class analysis failed:', error);
+                    this.hideProgress();
+                    this.showError(`クラス ${group} の分析に失敗しました: ${error.message}`);
+                } finally {
+                    const button = document.querySelector(`[data-group="${group}"]`);
+                    if (button) {
+                        button.classList.remove('loading');
+                        button.disabled = false;
+                    }
+                }
+            }
+
+            // 既存データからクラス分析を実行
+            async analyzeClassFromExistingData(group) {
+                const classTimeslots = Array.from(this.latestTimeslotMap.values())
+                    .filter(timeslot => timeslot.group === group);
+
+                const analysis = {
+                    group: group,
+                    totalPerformances: classTimeslots.length,
+                    totalSeats: 0,
+                    totalOccupiedSeats: 0,
+                    totalEmptySeats: 0,
+                    totalReservedSeats: 0,
+                    totalCheckedInSeats: 0,
+                    performances: [],
+                    capacityLevels: {
+                        full: 0,
+                        critical: 0,
+                        warning: 0,
+                        normal: 0
+                    }
+                };
+
+                // 各公演の詳細データを順次取得（API負荷軽減のため並行実行を制限）
+                const performances = [];
+                
+                for (let i = 0; i < classTimeslots.length; i++) {
+                    const timeslot = classTimeslots[i];
+                    
+                    // 前のリクエストが完了してから次のリクエストを開始
+                    if (i > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    try {
+                        console.log(`Fetching seat data for ${timeslot.day}日目 ${timeslot.timeslot}...`);
+                        
+                        // 実際のseatMapデータを取得
+                        const seatData = await this.getDetailedSeatData(timeslot);
+                        if (seatData && seatData.length > 0) {
+                            console.log(`Successfully got seat data for ${timeslot.day}日目 ${timeslot.timeslot}: ${seatData.length} seats`);
+                            
+                            // seatMapデータから正確なチェックイン情報を計算
+                            const seatAnalysis = this.analyzeSeatData(seatData);
+                            
+                            performances.push({
+                                day: timeslot.day,
+                                timeslot: timeslot.timeslot,
+                                totalSeats: seatAnalysis.totalSeats,
+                                occupiedSeats: timeslot.occupiedSeats || 0,
+                                emptySeats: seatAnalysis.emptySeats,
+                                reservedSeats: seatAnalysis.reservedSeats,
+                                checkedInSeats: seatAnalysis.checkedInSeats,
+                                checkedInRate: seatAnalysis.checkedInRate,
+                                capacityLevel: timeslot.capacityLevel || 'normal',
+                                lastChecked: timeslot.lastChecked,
+                                dataSource: 'seatMap'
+                            });
+                        } else {
+                            console.log(`No seat data available for ${timeslot.day}日目 ${timeslot.timeslot}, using fallback`);
+                            
+                            // seatMapデータが取得できない場合は既存データを使用
+                            const reservedSeats = timeslot.reservedSeats || 0;
+                            const checkedInSeats = timeslot.checkedInSeats || 0;
+                            
+                            performances.push({
+                                day: timeslot.day,
+                                timeslot: timeslot.timeslot,
+                                totalSeats: timeslot.totalSeats || 0,
+                                occupiedSeats: timeslot.occupiedSeats || 0,
+                                emptySeats: timeslot.emptySeats || 0,
+                                reservedSeats: reservedSeats,
+                                checkedInSeats: checkedInSeats,
+                                checkedInRate: reservedSeats > 0 ? ((checkedInSeats / reservedSeats) * 100).toFixed(1) : 0,
+                                capacityLevel: timeslot.capacityLevel || 'normal',
+                                lastChecked: timeslot.lastChecked,
+                                dataSource: 'fallback'
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Failed to get detailed data for ${timeslot.day}日目 ${timeslot.timeslot}:`, error);
+                        
+                        // エラー時は既存データを使用
+                        const reservedSeats = timeslot.reservedSeats || 0;
+                        const checkedInSeats = timeslot.checkedInSeats || 0;
+                        
+                        performances.push({
+                            day: timeslot.day,
+                            timeslot: timeslot.timeslot,
+                            totalSeats: timeslot.totalSeats || 0,
+                            occupiedSeats: timeslot.occupiedSeats || 0,
+                            emptySeats: timeslot.emptySeats || 0,
+                            reservedSeats: reservedSeats,
+                            checkedInSeats: checkedInSeats,
+                            checkedInRate: reservedSeats > 0 ? ((checkedInSeats / reservedSeats) * 100).toFixed(1) : 0,
+                            capacityLevel: timeslot.capacityLevel || 'normal',
+                            lastChecked: timeslot.lastChecked,
+                            dataSource: 'error'
+                        });
+                    }
+                }
+                
+                // 分析データを集計
+                performances.forEach(perf => {
+                    analysis.totalSeats += perf.totalSeats;
+                    analysis.totalOccupiedSeats += perf.occupiedSeats;
+                    analysis.totalEmptySeats += perf.emptySeats;
+                    analysis.totalReservedSeats += perf.reservedSeats;
+                    analysis.totalCheckedInSeats += perf.checkedInSeats;
+                    
+                    const capacityLevel = perf.capacityLevel;
+                    analysis.capacityLevels[capacityLevel]++;
+                    
+                    analysis.performances.push(perf);
+                });
+
+                // クラス全体のチェックイン率を計算
+                analysis.overallCheckedInRate = analysis.totalReservedSeats > 0 ? 
+                    ((analysis.totalCheckedInSeats / analysis.totalReservedSeats) * 100).toFixed(1) : 0;
+
+                return analysis;
+            }
+
+            // クラス分析モーダルを表示
+            showClassAnalysisModal(group, analysisData) {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal-content';
+                
+                const header = document.createElement('div');
+                header.className = 'modal-header';
+                header.innerHTML = `
+                    <h2 class="modal-title">${group}組 - クラス別分析</h2>
+                    <button class="modal-close">&times;</button>
+                `;
+                
+                const body = document.createElement('div');
+                body.className = 'modal-body';
+                
+                // 分析データをレンダリング
+                this.renderClassAnalysisContent(body, analysisData);
+                
+                modal.appendChild(header);
+                modal.appendChild(body);
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                // 閉じるボタンのイベント
+                const closeBtn = header.querySelector('.modal-close');
+                const closeModal = () => {
+                    overlay.remove();
+                };
+                closeBtn.addEventListener('click', closeModal);
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) closeModal();
+                });
+            }
+
+            // クラス分析コンテンツをレンダリング
+            renderClassAnalysisContent(body, analysisData) {
+                const occupancyRate = analysisData.totalSeats > 0 ? 
+                    ((analysisData.totalOccupiedSeats / analysisData.totalSeats) * 100).toFixed(1) : 0;
+
+                body.innerHTML = `
+                    <div class="performance-details">
+                        <div class="detail-card reserved">
+                            <h4>クラス全体サマリー</h4>
+                            <div class="detail-stats">
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalPerformances}</p>
+                                    <p class="stat-label">公演数</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalSeats}</p>
+                                    <p class="stat-label">総座席数</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalOccupiedSeats}</p>
+                                    <p class="stat-label">利用中座席</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalEmptySeats}</p>
+                                    <p class="stat-label">空席数</p>
+                                </div>
+                            </div>
+                            <div class="occupancy-rate">
+                                利用率: ${occupancyRate}%
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card checked-in">
+                            <h4>チェックイン状況</h4>
+                            <div class="detail-stats">
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalReservedSeats || 0}</p>
+                                    <p class="stat-label">予約済み座席</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.totalCheckedInSeats || 0}</p>
+                                    <p class="stat-label">チェックイン済み</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.overallCheckedInRate || 0}%</p>
+                                    <p class="stat-label">チェックイン率</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${(analysisData.totalReservedSeats || 0) - (analysisData.totalCheckedInSeats || 0)}</p>
+                                    <p class="stat-label">未チェックイン</p>
+                                </div>
+                            </div>
+                            <div class="checkin-rate-info">
+                                予約済み座席に対するチェックイン率: ${analysisData.overallCheckedInRate || 0}%
+                            </div>
+                        </div>
+                        
+                        <div class="detail-card warning">
+                            <h4>ステータス分布</h4>
+                            <div class="detail-stats">
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.capacityLevels.full}</p>
+                                    <p class="stat-label">満席</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.capacityLevels.critical}</p>
+                                    <p class="stat-label">緊急</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.capacityLevels.warning}</p>
+                                    <p class="stat-label">警告</p>
+                                </div>
+                                <div class="stat-box">
+                                    <p class="stat-value">${analysisData.capacityLevels.normal}</p>
+                                    <p class="stat-label">正常</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: #333;">公演詳細一覧</h4>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${this.renderPerformanceList(analysisData.performances)}
+                        </div>
+                    </div>
+                    
+                    <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #004085;">ℹ️ 分析情報</h4>
+                        <p style="margin: 0; color: #004085; font-size: 14px;">
+                            分析時刻: ${new Date().toLocaleString('ja-JP')}<br>
+                            対象クラス: ${analysisData.group}組<br>
+                            分析対象公演数: ${analysisData.totalPerformances}件<br>
+                            データソース: ${this.getDataSourceSummary(analysisData.performances)}<br>
+                            チェックイン率計算: APIのseatMapデータからC列「予約済」かつE列「済」を正確に判定<br>
+                            分析精度: ${this.getAnalysisAccuracy(analysisData.performances)}
+                        </p>
+                    </div>
+                `;
+            }
+
+            // データソースサマリーを取得
+            getDataSourceSummary(performances) {
+                if (!performances || performances.length === 0) {
+                    return 'データなし';
+                }
+                
+                const sourceCounts = performances.reduce((acc, perf) => {
+                    const source = perf.dataSource || 'unknown';
+                    acc[source] = (acc[source] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const sourceLabels = {
+                    'seatMap': 'API (seatMap)',
+                    'fallback': '推定データ',
+                    'error': 'エラー時フォールバック',
+                    'unknown': '不明'
+                };
+                
+                return Object.entries(sourceCounts)
+                    .map(([source, count]) => `${sourceLabels[source] || source}: ${count}件`)
+                    .join(', ');
+            }
+
+            // 分析精度を取得
+            getAnalysisAccuracy(performances) {
+                if (!performances || performances.length === 0) {
+                    return 'データなし';
+                }
+                
+                const seatMapCount = performances.filter(p => p.dataSource === 'seatMap').length;
+                const totalCount = performances.length;
+                const accuracy = totalCount > 0 ? Math.round((seatMapCount / totalCount) * 100) : 0;
+                
+                if (accuracy >= 80) {
+                    return `高精度 (${accuracy}%がAPIデータ)`;
+                } else if (accuracy >= 50) {
+                    return `中精度 (${accuracy}%がAPIデータ)`;
+                } else {
+                    return `低精度 (${accuracy}%がAPIデータ) - 推定データが多い`;
+                }
+            }
+
+            // プログレス表示
+            showProgress(message) {
+                // 既存のプログレスを削除
+                this.hideProgress();
+                
+                const progressDiv = document.createElement('div');
+                progressDiv.id = 'class-analysis-progress';
+                progressDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px 30px;
+                    border-radius: 10px;
+                    z-index: 10000;
+                    text-align: center;
+                    font-size: 16px;
+                `;
+                progressDiv.innerHTML = `
+                    <div style="margin-bottom: 10px;">${message}</div>
+                    <div style="width: 200px; height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
+                        <div id="progress-bar" style="width: 0%; height: 100%; background: #4CAF50; transition: width 0.3s ease;"></div>
+                    </div>
+                `;
+                
+                document.body.appendChild(progressDiv);
+                
+                // プログレスバーをアニメーション
+                setTimeout(() => {
+                    const progressBar = document.getElementById('progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                }, 100);
+            }
+
+            // プログレス非表示
+            hideProgress() {
+                const progressDiv = document.getElementById('class-analysis-progress');
+                if (progressDiv) {
+                    progressDiv.remove();
+                }
+            }
+
+            // 公演一覧をレンダリング
+            renderPerformanceList(performances) {
+                if (!performances || performances.length === 0) {
+                    return '<p style="text-align: center; color: #666; padding: 20px;">公演データがありません</p>';
+                }
+
+                return performances.map(perf => {
+                    const capacityLevelText = this.getCapacityLevelText(perf.capacityLevel);
+                    const lastChecked = perf.lastChecked ? new Date(perf.lastChecked).toLocaleString('ja-JP') : '-';
+                    
+                    return `
+                        <div style="border: 1px solid #e1e5e9; border-left: 4px solid ${this.getCapacityLevelColor(perf.capacityLevel)}; border-radius: 8px; padding: 12px; margin: 8px 0; background: white;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-weight: 600;">${perf.day}日目 ${perf.timeslot}</div>
+                                <span style="font-size: 12px; color: #666;">${lastChecked}</span>
+                            </div>
+                            <div style="margin-top: 8px; color: #333;">
+                                <div>ステータス: ${capacityLevelText}</div>
+                                <div>座席状況: ${perf.occupiedSeats}/${perf.totalSeats} (空席: ${perf.emptySeats}席)</div>
+                                <div style="margin-top: 4px; padding: 6px; background: #f8f9fa; border-radius: 4px; font-size: 13px;">
+                                    <strong>チェックイン状況:</strong> 予約済み ${perf.reservedSeats || 0}席 / チェックイン済み ${perf.checkedInSeats || 0}席 
+                                    <span style="color: #27ae60; font-weight: 600;">(${perf.checkedInRate || 0}%)</span>
+                                    ${perf.dataSource ? `<br><small style="color: #666;">データソース: ${perf.dataSource === 'seatMap' ? 'API (seatMap)' : perf.dataSource === 'fallback' ? '推定データ' : 'エラー時フォールバック'}</small>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // ステータスレベルに対応する色を取得
+            getCapacityLevelColor(level) {
+                switch (level) {
+                    case 'full': return '#e74c3c';
+                    case 'critical': return '#f39c12';
+                    case 'warning': return '#f1c40f';
+                    default: return '#27ae60';
+                }
+            }
+
+            // ネットワーク接続状態をチェック
+            checkNetworkConnection() {
+                try {
+                    // navigator.onLine をチェック
+                    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                        return false;
+                    }
+                    
+                    // 追加のネットワークチェック（オプション）
+                    return true;
+                } catch (error) {
+                    console.warn('Network check failed:', error);
+                    return true; // チェックできない場合は接続ありと仮定
+                }
+            }
+
+            // ネットワークエラーかどうかを判定
+            isNetworkError(error) {
+                if (!error) return false;
+                
+                const errorMessage = error.message || error.toString();
+                const networkErrorPatterns = [
+                    'ERR_NAME_NOT_RESOLVED',
+                    'ERR_NETWORK_CHANGED',
+                    'ERR_INTERNET_DISCONNECTED',
+                    'ERR_NETWORK_ACCESS_DENIED',
+                    'ERR_CONNECTION_REFUSED',
+                    'ERR_CONNECTION_TIMED_OUT',
+                    'ERR_CONNECTION_RESET',
+                    'ERR_ADDRESS_UNREACHABLE',
+                    'ERR_NETWORK_UNREACHABLE',
+                    'timeout',
+                    'network',
+                    'offline'
+                ];
+                
+                return networkErrorPatterns.some(pattern => 
+                    errorMessage.toLowerCase().includes(pattern.toLowerCase())
+                );
+            }
+
+            // オフラインモードの処理
+            async handleOfflineMode() {
+                console.log('Offline mode detected');
+                
+                // オフライン状態の表示
+                this.elements.timeslotsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <h3>オフラインモード</h3>
+                        <p>ネットワーク接続がありません。</p>
+                        <p>接続が復旧すると自動的にデータを取得します。</p>
+                        <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            再試行
+                        </button>
+                    </div>
+                `;
+                
+                // クラス別分析もオフライン表示
+                if (this.elements.classButtonsContainer) {
+                    this.elements.classButtonsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            <p>オフラインモードのため、クラス分析は利用できません。</p>
+                        </div>
+                    `;
+                }
+                
+                // 定期的に接続をチェック
+                this.startOfflineReconnectionCheck();
+            }
+
+            // ネットワークエラーの処理
+            async handleNetworkError(error) {
+                console.error('Network error detected:', error);
+                
+                // ネットワーク状態インジケーターを表示
+                this.showNetworkStatus('error', this.getNetworkErrorMessage(error));
+                
+                // オフライン同期システムが利用可能かチェック
+                if (window.OfflineSyncV2 && window.OfflineSyncV2.addOperation) {
+                    console.log('Offline sync system available, delegating operations');
+                    // オフライン同期システムに委譲
+                    await this.delegateToOfflineSync();
+                } else {
+                    // フォールバック処理
+                    await this.loadWithFallback('ネットワークエラーのため、キャッシュデータを使用します');
+                }
+            }
+
+            // ネットワークエラーメッセージを取得
+            getNetworkErrorMessage(error) {
+                const errorMessage = error.message || error.toString();
+                
+                if (errorMessage.includes('ERR_NAME_NOT_RESOLVED')) {
+                    return 'DNS解決に失敗しました。インターネット接続を確認してください。';
+                } else if (errorMessage.includes('ERR_NETWORK_CHANGED')) {
+                    return 'ネットワーク接続が変更されました。';
+                } else if (errorMessage.includes('timeout')) {
+                    return '接続がタイムアウトしました。';
+                } else if (errorMessage.includes('offline')) {
+                    return 'オフライン状態です。';
+                } else {
+                    return 'ネットワーク接続に問題があります。';
+                }
+            }
+
+            // オフライン同期システムに委譲
+            async delegateToOfflineSync() {
+                try {
+                    console.log('Delegating to offline sync system');
+                    
+                    // オフライン同期システムに操作を追加
+                    if (window.OfflineSyncV2.addOperation) {
+                        await window.OfflineSyncV2.addOperation('getDetailedCapacityAnalysis', [null, null, null]);
+                    }
+                    
+                    // オフライン状態の表示
+                    this.elements.timeslotsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <h3>オフライン同期中</h3>
+                            <p>ネットワーク接続が復旧すると、データが同期されます。</p>
+                            <p>オフライン同期システムが動作しています。</p>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to delegate to offline sync:', error);
+                    await this.loadWithFallback('オフライン同期に失敗しました');
+                }
+            }
+
+            // オフライン再接続チェックを開始
+            startOfflineReconnectionCheck() {
+                if (this.offlineCheckInterval) {
+                    clearInterval(this.offlineCheckInterval);
+                }
+                
+                this.offlineCheckInterval = setInterval(async () => {
+                    if (this.checkNetworkConnection()) {
+                        console.log('Network connection restored');
+                        clearInterval(this.offlineCheckInterval);
+                        this.offlineCheckInterval = null;
+                        
+                        // 接続復旧時の処理
+                        this.showNetworkStatus('success', 'ネットワーク接続が復旧しました');
+                        this.showSuccess('データを再取得しています...');
+                        await this.loadInitialData();
+                    }
+                }, 5000); // 5秒ごとにチェック
+            }
+
+            // ネットワーク状態を表示
+            showNetworkStatus(type, message) {
+                if (!this.elements.networkStatus || !this.elements.networkStatusText) return;
+                
+                this.elements.networkStatus.className = `network-status-indicator ${type}`;
+                this.elements.networkStatusText.textContent = message;
+                this.elements.networkStatus.style.display = 'block';
+                
+                // 成功の場合は3秒後に非表示
+                if (type === 'success') {
+                    setTimeout(() => {
+                        if (this.elements.networkStatus) {
+                            this.elements.networkStatus.style.display = 'none';
+                        }
+                    }, 3000);
+                }
+            }
+
+            // 接続再試行
+            async retryConnection() {
+                if (!this.elements.networkStatusText) return;
+                
+                this.elements.networkStatusText.textContent = '接続を再試行中...';
+                this.elements.networkStatus.className = 'network-status-indicator';
+                
+                try {
+                    // ネットワーク接続をチェック
+                    if (this.checkNetworkConnection()) {
+                        this.showNetworkStatus('success', '接続が復旧しました');
+                        await this.loadInitialData();
+                    } else {
+                        this.showNetworkStatus('error', '接続に失敗しました。ネットワーク設定を確認してください。');
+                    }
+                } catch (error) {
+                    console.error('Connection retry failed:', error);
+                    this.showNetworkStatus('error', `接続エラー: ${error.message}`);
+                }
             }
         }
 
