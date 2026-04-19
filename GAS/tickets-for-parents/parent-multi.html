@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>保護者席申込フォーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Google Fonts: Noto Sans JP + Montserrat -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --accent: #10cea7;
+            --accent-dark: #098678;
+            --bg: #f4f7fb;
+            --card-bg: #fff;
+            --primary-txt: #21323d;
+            --form-border: #bae4d7;
+            --danger: #fd7070;
+            --select: #32ffd5;
+            --disabled: #e2e2e2;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--primary-txt);
+            font-family: 'Noto Sans JP', 'Montserrat', Arial, sans-serif;
+            font-size: 18px;
+            letter-spacing: 0.01em;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto 24px auto;
+            padding: 0 2vw;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(16, 210, 167, 0.08), 0 1.5px 6px #b6e8de75;
+            padding: 40px 28px 32px 28px;
+            margin-bottom: 36px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInCard 0.7s cubic-bezier(.57, .21, .69, 1.25);
+        }
+
+        @keyframes fadeInCard {
+            0% {
+                opacity: 0;
+                transform: translateY(24px) scale(0.96);
+            }
+
+            100% {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .title {
+            font-family: 'Montserrat', 'Noto Sans JP', sans-serif;
+            font-size: 2.4em;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-align: center;
+            color: var(--accent-dark);
+            margin-bottom: 0.45em;
+        }
+
+        .desc {
+            text-align: center;
+            font-size: 1.08em;
+            color: #356860;
+            margin-bottom: 1.7em;
+        }
+
+        .desc b {
+            color: var(--accent);
+        }
+
+        .contact {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.96em;
+            margin-bottom: 1.3em;
+            color: var(--accent-dark);
+        }
+
+        .step-title {
+            font-size: 1.12em;
+            font-weight: 700;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            letter-spacing: .03em;
+            border-left: 5px solid var(--accent);
+            padding-left: 13px;
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .form-group label {
+            color: var(--accent-dark);
+            font-weight: 600;
+            font-size: 1em;
+            letter-spacing: .01em;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 11px 12px;
+            border: 1.7px solid var(--form-border);
+            background: #f6fbfa;
+            border-radius: 9px;
+            font-size: 1.06em;
+            font-family: inherit;
+            outline: none;
+            transition: border 0.14s, background 0.12s;
+            width: 100%;
+            box-sizing: border-box;
+            appearance: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent);
+            background: #eafff6;
+        }
+
+        .deadline {
+            margin-top: 8px;
+            font-size: 1em;
+            text-align: right;
+            color: #ebad01;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .stage-label {
+            text-align: center;
+            font-size: 1em;
+            color: var(--accent-dark);
+            margin: 11px 0 4px 0;
+            font-weight: bold;
+            letter-spacing: .02em;
+            padding: 2px 0;
+        }
+
+        /*==座席表==*/
+        .seat-table-area {
+            display: flex;
+            justify-content: center;
+            margin: 0 0 13px 0;
+            padding: 0 3vw;
+        }
+
+        .seat-table {
+            border-collapse: collapse;
+            margin: 0 auto;
+            background: #f3f8f5;
+            border: 1.5px solid #b2e5cc;
+            table-layout: fixed;
+            min-width: 375px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .seat-table tr {
+            height: 36px;
+        }
+
+        .seat-table td,
+        .seat-table th {
+            width: 34px;
+            height: 34px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 1em;
+            padding: 0;
+            border: 1px solid #b2e5cc;
+            background: #eaf7ef;
+            color: #167a68;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.1s, color 0.1s;
+            border-radius: 0 !important;
+        }
+
+        .seat-table .aisle {
+            background: transparent !important;
+            border: none !important;
+            cursor: default;
+        }
+
+        .seat-table .seat.selected {
+            background: var(--accent) !important;
+            color: #fff !important;
+            font-weight: 700;
+        }
+
+        .seat-table .seat.disabled {
+            background: #e2e2e2 !important;
+            color: #b1b1b1 !important;
+            cursor: not-allowed;
+            font-weight: normal;
+        }
+
+        .seat-table .seat:active:not(.disabled) {
+            background: var(--accent-dark) !important;
+            color: #fff;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(90deg, var(--accent-dark) 20%, var(--accent) 80%);
+            color: #fff;
+            font-family: 'Montserrat', 'Noto Sans JP', sans-serif;
+            font-weight: bold;
+            border: none;
+            border-radius: 13px;
+            font-size: 1.13em;
+            box-shadow: 0 2px 12px #32ffd524;
+            padding: 17px 0;
+            margin: 17px 0 8px 0;
+            letter-spacing: .08em;
+            cursor: pointer;
+            transition: background .13s, transform .13s;
+            display: block;
+        }
+
+        .submit-btn:disabled {
+            background: #d2efea;
+            color: #fff;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-bar {
+            min-height: 24px;
+            font-size: 1em;
+            margin: 12px 0 0 0;
+            color: var(--accent-dark);
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: .04em;
+        }
+
+        /* ---------- */
+        @media (max-width: 600px) {
+
+            html,
+            body {
+                font-size: 16.3px;
+            }
+
+            .container {
+                max-width: 100vw;
+                padding: 0;
+                margin-top: 14px;
+            }
+
+            .card {
+                padding: 19px 5vw 20px 5vw;
+                border-radius: 14px;
+                margin-bottom: 16px;
+                box-shadow: 0 3.5px 15px rgba(50, 255, 213, 0.08), 0 1.5px 6px #b6e8de30;
+            }
+
+            .title {
+                font-size: 1.25em;
+                margin-bottom: 0.58em;
+            }
+
+            .step-title {
+                font-size: 1em;
+                padding-left: 10px;
+                margin-bottom: 15px;
+                border-left-width: 4px;
+            }
+
+            .seat-table-area {
+                padding: 0;
+            }
+
+            .seat-table td,
+            .seat-table th {
+                font-size: 1em;
+                width: 7vw;
+                min-width: 6vw;
+                height: 7vw;
+            }
+
+            .seat-table {
+                min-width: unset;
+            }
+        }
+
+        @media (max-width: 400px) {
+
+            html,
+            body {
+                font-size: 15px;
+            }
+
+            .title {
+                font-size: 1em;
+            }
+
+            .seat-table td,
+            .seat-table th {
+                font-size: 0.93em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" style="margin-top:0;">
+            <div class="title">保護者席申込フォーム</div>
+            <div class="desc">
+                ご希望の席を選んでお申し込みください。<br>
+                <b>舞台はA列側</b>です。<br>
+                既に選択された席は選択できません。<br>
+                <h4>8組9:15〜10:10用のフォームです。</h4>
+                <h5><b>※詳細は配布済の手紙をご参照ください</b></h5>
+            </div>
+            <div class="contact">
+                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" style="vertical-align:-3px;">
+                    <rect x="2.2" y="4" width="15.6" height="12" rx="2.1" stroke="#10cea7" stroke-width="1.3"
+                        fill="white" />
+                    <path d="M3 5.15L10 11.1L17 5.15" stroke="#10cea7" stroke-width="1.3" fill="none"
+                        stroke-linecap="round" />
+                </svg>
+                お問合せ：<span>nzn.engeki5@gmail.com</span>
+            </div>
+            <div class="deadline" id="deadlineMsg"></div>
+            <form id="parentForm" autocomplete="off">
+                <div class="step-title">ステップ1：生徒情報の入力</div>
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="classSel">生徒のクラス</label>
+                        <select id="classSel" name="class" required>
+                            <option value="">選択してください</option>
+                            <option value="1">1組</option>
+                            <option value="2">2組</option>
+                            <option value="3">3組</option>
+                            <option value="4">4組</option>
+                            <option value="5">5組</option>
+                            <option value="6">6組</option>
+                            <option value="7">7組</option>
+                            <option value="8">8組</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="nameInput">生徒のお名前</label>
+                        <input type="text" id="nameInput" name="name" required placeholder="例: 山田 花子">
+                    </div>
+                    <div class="form-group">
+                        <label for="mailInput">メールアドレス</label>
+                        <input type="email" id="mailInput" name="mail" required placeholder="例: example@mail.com">
+                    </div>
+                </div>
+
+                <div style="height:28px;"></div>
+
+                <div class="step-title">ステップ2：座席を選択</div>
+                <div class="stage-label">▶ 舞台（A列側）◀</div>
+                <div class="seat-table-area">
+                    <table class="seat-table" id="seatTable"></table>
+                </div>
+                <input type="hidden" name="selectedSeats" id="selectedSeats" />
+
+                <div style="height:28px;"></div>
+
+                <div class="step-title">ステップ3：申込</div>
+                <button type="submit" id="submitBtn" class="submit-btn">申込</button>
+                <div class="result-bar" id="result"></div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // GAS 側関数との連携
+        if (typeof google !== "undefined") {
+            google.script.run.withSuccessHandler(function (isOk) { })
+                .withFailureHandler(function (e) {
+                    document.body.innerHTML = "<h3 style='color:red'>正規アクセスでご利用ください</h3>";
+                }).validateLicense();
+        }
+
+        const seatRows = ["A", "B", "C", "D", "E"];
+        let seatStatusMap = {};
+        let selectedSeats = [];
+        let applicationDeadline = 0;
+
+        // 締切取得
+        if (typeof google !== "undefined") {
+            google.script.run.withSuccessHandler(function (ts) {
+                applicationDeadline = Number(ts);
+                showDeadline();
+                if (Date.now() > applicationDeadline) {
+                    lockForm();
+                } else {
+                    loadSeats();
+                }
+            }).getDeadlineTimestamp();
+        }
+
+        function showDeadline() {
+            const d = new Date(applicationDeadline);
+            if (Date.now() > applicationDeadline) {
+                document.getElementById("deadlineMsg").innerHTML = "申込は締切りました。";
+            } else {
+                document.getElementById("deadlineMsg").innerHTML = "申込期限：" + d.toLocaleString('ja-JP') + " まで";
+            }
+        }
+        function loadSeats() {
+            if (typeof google !== "undefined") {
+                google.script.run.withSuccessHandler(drawSeats).getAllSeats();
+            }
+        }
+
+        // テーブル型座席表
+        function drawSeats(seats) {
+            seatStatusMap = {};
+            seats.forEach(seat => {
+                seatStatusMap[seat.row + "-" + seat.col] = seat.status;
+            });
+            let html = '';
+
+            for (let i = 0; i < seatRows.length; i++) {
+                let row = seatRows[i];
+                html += '<tr>';
+                if (i < 4) { // A,B,C,D
+                    for (let c = 1; c <= 13; c++) {
+                        if (c === 7) {
+                            html += `<td class="aisle"></td>`;
+                        } else {
+                            let realCol = c <= 6 ? c : c - 1;
+                            let key = row + "-" + realCol;
+                            let status = seatStatusMap[key] || "空";
+                            let classes = 'seat';
+                            if (status === '確保' || status === 'unavailable') classes += ' disabled';
+                            if (selectedSeats.includes(key)) classes += ' selected';
+                            html += `<td class="${classes}" data-seat="${key}">${row}${realCol}</td>`;
+                        }
+                    }
+                } else {
+                    html += `<td class="aisle"></td>
+            <td class="aisle"></td>
+            <td class="aisle"></td>`;
+                    for (let c = 1; c <= 3; c++) {
+                        let key = row + "-" + c;
+                        let status = seatStatusMap[key] || "空";
+                        let classes = 'seat';
+                        if (status === '確保' || status === 'unavailable') classes += ' disabled';
+                        if (selectedSeats.includes(key)) classes += ' selected';
+                        html += `<td class="${classes}" data-seat="${key}">${row}${c}</td>`;
+                    }
+                    html += `<td class="aisle"></td>`;
+                    for (let c = 4; c <= 6; c++) {
+                        let key = row + "-" + c;
+                        let status = seatStatusMap[key] || "空";
+                        let classes = 'seat';
+                        if (status === '確保' || status === 'unavailable') classes += ' disabled';
+                        if (selectedSeats.includes(key)) classes += ' selected';
+                        html += `<td class="${classes}" data-seat="${key}">${row}${c}</td>`;
+                    }
+                    html += `<td class="aisle"></td>
+            <td class="aisle"></td>
+            <td class="aisle"></td>`;
+                }
+                html += '</tr>';
+            }
+            document.getElementById("seatTable").innerHTML = html;
+            enableSeatSelect();
+            document.getElementById("selectedSeats").value = selectedSeats.join(",");
+        }
+
+        function enableSeatSelect() {
+            document.querySelectorAll(".seat-table .seat:not(.aisle):not(.disabled)").forEach(cell => {
+                cell.onclick = function () {
+                    const seat = this.dataset.seat;
+                    if (selectedSeats.includes(seat)) {
+                        selectedSeats = selectedSeats.filter(s => s !== seat);
+                        this.classList.remove("selected");
+                    } else {
+                        selectedSeats.push(seat);
+                        this.classList.add("selected");
+                    }
+                    document.getElementById("selectedSeats").value = selectedSeats.join(",");
+                }
+            });
+        }
+
+        function lockForm() {
+            document.getElementById("seatTable").innerHTML = "";
+            document.getElementById("parentForm").innerHTML = "<h3 style='color:#d62c27;text-align:center'>申込受付は終了しました</h3>";
+        }
+
+        document.getElementById("parentForm").onsubmit = function (e) {
+            e.preventDefault();
+            if (applicationDeadline && Date.now() > applicationDeadline) {
+                lockForm();
+                return;
+            }
+            const classNo = this.class.value;
+            const name = this.name.value.trim();
+            const mail = this.mail.value.trim();
+            if (!classNo) { alert("クラスを選択してください"); return; }
+            if (!name || !mail) { alert("必須項目を記入してください"); return; }
+            if (selectedSeats.length === 0) {
+                alert("座席を1つ以上選んでください");
+                return;
+            }
+            const selArr = selectedSeats.map(s => {
+                const [row, col] = s.split("-");
+                return { row, col: Number(col) };
+            });
+            document.getElementById("result").innerText = "申込しています...";
+            document.getElementById("submitBtn").disabled = true;
+            if (typeof google !== "undefined") {
+                google.script.run.withSuccessHandler(function (msg) {
+                    document.getElementById("result").innerText = msg;
+                    selectedSeats = [];
+                    loadSeats();
+                    document.getElementById("submitBtn").disabled = false;
+                }).submitMultipleSeats(classNo, name, mail, selArr);
+            }
+        };
+    </script>
+</body>
+
+</html>
