@@ -5,38 +5,32 @@
 ## 🆕 最新機能（v2.3）
 
 ### 重要な更新（2025-09）
-- 【クラス別分析の精度向上】ダッシュボードのクラス別分析は、API の seatMap を用いて C 列「予約済」かつ E 列「済」を厳密に集計し、チェックイン率を算出するようになりました（推定値ではなく実データを優先）。
-- 【フォールバック最小化】API が成功した場合は推定ロジックを使わず、seatMap ベースの分析結果のみを採用。API 失敗時のみ推定データにフォールバック。
-- 【通信最適化】クラス別分析での seatMap 取得は順次実行（200ms 間隔）＋ JSONP タイムアウト 8s ＋ 最大 2 回リトライ。進行中はプログレス UI を表示。
-- 【表示強化】クラス全体および公演別に「予約済み」「チェックイン済み」「チェックイン率」を表示。データソース種別（seatMap/fallback/error）と、API データ比率に基づく分析精度も明示。
-- 【API 整理】GAS に存在しない `getClassPerformanceData` / `getAllClassesPerformanceData` をフロントエンドから削除し、不要な呼び出しによるエラーを解消。
-
-開発者向けメモ（定義の再確認）
-- 予約済み座席数: C 列が「予約済」または「確保」
-- チェックイン済み座席数: C 列が「予約済」かつ E 列が「済」
-- チェックイン率: 予約済み分母に対するチェックイン済みの割合（%）
+- **【クラス別分析の精度向上】**: ダッシュボードのクラス別分析は、API の seatMap を用いて C 列「予約済」かつ E 列「済」を厳密に判定して集計。
+- **【フォールバック最小化】**: API 成功時は実データを優先し、失敗時のみ推定データにフォールバックする高信頼ロジック。
+- **【通信最適化】**: seatMap 取得の順次実行（200ms間隔）、JSONP タイムアウト（8s）、最大 2 回のリトライを実装。
+- **【表示強化】**: 公演別に「予約済」「チェックイン済」「チェックイン率」を明示し、データソースの精度も表示。
+- **【API 整理】**: 不要な API 呼び出しを削除し、フロントエンドとバックエンドの整合性を向上。
 
 ### 強化座席監視システム（v2.3）
-- **リアルタイム監視**: 15秒間隔で全公演の座席状況を監視
-- **インテリジェント通知**: 容量レベル別の優先度通知システム
-- **監視ダッシュボード**: リアルタイム表示と統計情報
-- **重複防止**: クールダウン機能で重複通知を防止
-- **見本演劇除外**: テスト用公演をメール通知対象から除外
-- **詳細モーダル表示**: 各公演カードをクリックで詳細な座席分析データを表示
-- **正確な演算システム**: 予約済み座席とチェックイン済み座席の正確な計算
+- **リアルタイム監視**: 15秒間隔で全公演の座席状況を詳細監視。
+- **インテリジェント通知**: 容量レベル（正常/警告/緊急/満席）に応じた優先度別通知システム。
+- **詳細分析モーダル**: 各公演カードをクリックで、seatMap ベースの正確な座席分析データを表示。
+- **見本演劇除外**: テスト用公演をメール通知対象から自動的に除外。
 
-### PWA更新通知システム（v2.3）
-- **自動更新検知**: Service Workerが新しいデプロイを自動検知
-- **美しい通知UI**: グラデーション背景のモダンな更新通知
-- **ワンクリック更新**: 「今すぐ更新」ボタンで即座に最新版に更新
-- **定期チェック**: 5分間隔での自動更新チェック
-- **監査ログ**: 更新通知の表示・適用・却下を詳細記録
+### オフライン同期システム V2（v2.0+）
+- **iOS 最適化**: メモリ制限に対応したバッチサイズ調整、クリーンアップ頻度の向上。
+- **当日券オフライン予約**: オフライン時でもオンライン同等の席選定ロジックをローカルで実行。
+- **自動復帰同期**: オンライン復帰時にキュー内の操作を順次サーバーへ反映。
 
-### パフォーマンス最適化システム（v2.2）
-- **OptimizedLoader**: 依存関係を考慮した並列モジュール読み込み
-- **APICache**: インテリジェントキャッシュシステム
-- **UIOptimizer**: イベント処理とレンダリングの最適化
-- **PerformanceMonitor**: リアルタイムパフォーマンス監視
+### PWA 更新通知システム（v2.3）
+- **自動更新検知**: Service Worker が新しいデプロイを 5 分間隔で自動検知。
+- **モダン UI**: グラデーション背景の美しい通知バーによる「今すぐ更新」機能。
+- **監査ログ**: 更新通知の表示・適用・却下を詳細に記録。
+
+### パフォーマンス最適化
+- **OptimizedLoader**: 依存関係を考慮した並列モジュール読み込み。
+- **APICache**: API 呼び出しの重複排除と TTL 管理。
+- **UIOptimizer**: イベント処理とレンダリングの最適化。
 
 ## 📋 目次
 
@@ -182,6 +176,8 @@ graph TB
     T[TimeSlotConfig.gs]
     U[system-setting.gs]
   end
+  
+  Note over R,U: GAS/core/ver.7/
   
   subgraph "データストア"
     V[Google Spreadsheet]
@@ -362,7 +358,8 @@ graph TD
 - `walkin-main.js` / `walkin.css`: 当日券発行、枚数選択（±ボタン対応）
 - `timeslot-main.js` / `timeslot-schedules.js`: 時間帯選択（フロント固定データ）
 
-### バックエンド（GAS）
+### バックエンド（GAS v7）
+- **ディレクトリ**: `GAS/core/ver.7/`
 - `Code.gs`: API ルーター（doGet/doPost/JSONP 応答含む）と座席・予約・チェックイン・当日券・最高管理者編集処理
 - `TimeSlotConfig.gs`: 時間帯設定（GAS 側）
 - `SpreadsheetIds.gs`: 各公演のスプレッドシート ID 管理
@@ -438,7 +435,7 @@ graph TD
 
 ### 2. GAS デプロイ
 - Google Apps Script プロジェクトを作成
-- `Code.gs` / `TimeSlotConfig.gs` / `SpreadsheetIds.gs` / `system-setting.gs` を貼り付け
+- `GAS/core/ver.7/Code.gs` / `TimeSlotConfig.gs` / `SpreadsheetIds.gs` / `system-setting.gs` を GAS プロジェクトに貼り付け
 - `SpreadsheetIds.gs` の `SEAT_SHEET_IDS` を公演ごとに正しい ID へ更新
 - `system-setting.gs` の `setupPasswords()` を一度実行して、全パスワードを設定
 - ウェブアプリとしてデプロイ
@@ -1340,9 +1337,8 @@ graph TD
   - Windows/IE用のブラウザ設定
   - 依存: なし（独立）
 
-### 🔧 バックエンド（Google Apps Script）
-
-#### メインAPI
+#### 🔧 バックエンド（Google Apps Script v7）
+- **ディレクトリ**: `GAS/core/ver.7/`
 - **`Code.gs`**: メインAPI処理とビジネスロジック
   - **API ルーター**: `doGet`/`doPost`によるJSONP通信処理
   - **座席管理**: `getSeatData`, `getSeatDataMinimal` - 座席データ取得
@@ -1351,28 +1347,11 @@ graph TD
   - **当日券機能**: `assignWalkInSeat`, `assignWalkInSeats`, `assignWalkInConsecutiveSeats` - 当日券発行
   - **最高管理者機能**: `updateSeatData`, `updateMultipleSeats` - 座席データ編集
   - **認証機能**: `verifyModePassword` - モード別パスワード認証
-  - **システム管理**: `getSystemLock`, `setSystemLock` - システムロック制御
-  - **危険コマンド**: `execDangerCommand` - コンソール専用危険操作
-  - **テスト機能**: `testApi` - 全機能疎通テスト
-  - **エラー処理**: `reportError` - クライアントエラー報告
-  - **ログシステム**: `getOperationLogs`, `getLogStatistics`, `recordClientAudit` - 監査ログ
+  - **ログシステム**: `getClientAuditLogs`, `recordClientAudit` - 監査ログ
   - **監視システム**: `getDetailedCapacityAnalysis`, `sendStatusNotificationEmail` - 強化監視
-  - **ヘルパー関数**: `isValidSeatId`, `getSheet` - 共通処理
-  - 依存: `TimeSlotConfig.gs`, `SpreadsheetIds.gs`
-
-#### 設定・データ管理
 - **`SpreadsheetIds.gs`**: スプレッドシートID管理
-  - 公演別スプレッドシートID定義、シート名設定
-  - 座席シート、ログシートのID管理
-  - 依存: なし（Code.gsから参照される）
 - **`TimeSlotConfig.gs`**: 時間帯設定管理
-  - 組別時間帯データ定義、時間帯取得API
-  - フロントエンドとバックエンドの時間帯データ同期
-  - 依存: なし（Code.gsから参照される）
 - **`system-setting.gs`**: システム設定ユーティリティ
-  - パスワード設定、初期化処理
-  - システム設定の一括管理
-  - 依存: なし（手動実行用）
 
 #### オフライン用バックエンド（フェイルオーバー）
 - **`OfflineCode.gs`**: オフライン用メインAPI処理
@@ -1394,10 +1373,10 @@ graph TD
 |----------|-------------|------|
 | **.gitignore** | 1 | Git除外設定 |
 | **CNAME** | 1 | カスタムドメイン設定 |
-| **Code.gs** | 2,331 | メインAPI処理とビジネスロジック |
+| **Code.gs** | 2,479 | メインAPI処理とビジネスロジック (v7) |
 | **LICENSE** | 21 | ライセンス情報 |
-| **README.md** | 1,472 | プロジェクトドキュメント |
-| **SpreadsheetIds.gs** | 110 | スプレッドシートID管理 |
+| **README.md** | ~2,000 | プロジェクトドキュメント |
+| **SpreadsheetIds.gs** | 119 | スプレッドシートID管理 |
 | **TimeSlotConfig.gs** | 83 | 時間帯設定管理 |
 | **system-setting.gs** | 62 | システム設定ユーティリティ |
 | **api.js** | 575 | GAS API呼び出し機能 |
@@ -1406,19 +1385,19 @@ graph TD
 | **optimized-loader.js** | 160 | 最適化されたスクリプトローダー |
 | **ui-optimizer.js** | 343 | UI応答性の最適化 |
 | **performance-monitor.js** | 279 | パフォーマンス監視 |
-| **enhanced-status-monitor.js** | 419 | 強化座席監視システム（見本演劇除外機能追加） |
+| **enhanced-status-monitor.js** | 450 | 強化座席監視システム |
 | **audit-logger.js** | 245 | 監査ログシステム |
-| **config.js** | 344 | システム設定とURL管理機能 |
+| **config.js** | 379 | システム設定とURL管理機能 |
 | **error-handler.js** | 194 | エラーハンドリング機能 |
 | **system-lock.js** | 102 | システムロック機能 |
 | **pwa-update.js** | 474 | PWA更新通知システム |
 | **pwa-install.js** | 182 | PWAインストール促進機能 |
 | **full-capacity-monitor.js** | 253 | 満席監視システム |
-| **offline-sync-v2.js** | 3,079 | オフライン同期システム（v2.0） |
+| **offline-sync-v2.js** | 3,247 | オフライン同期システム（v2.0） |
 | **offline-sync-v2.css** | 896 | オフライン同期UI |
 | **offline-sync.js** | 544 | 旧オフライン同期システム |
 | **sw.js** | 201 | Service Worker（v2.3 PWA更新対応版） |
-| **index.html** | 399 | 組選択ページ（PWA更新通知機能追加） |
+| **index.html** | 399 | 組選択ページ |
 | **index-main.js** | 18 | 組選択ページのメインロジック |
 | **timeslot.html** | 392 | 時間帯選択ページ |
 | **timeslot-main.js** | 186 | 時間帯選択ページのメインロジック |
@@ -1432,14 +1411,14 @@ graph TD
 | **logs.html** | 342 | 操作ログ表示ページ |
 | **logs-main.js** | 866 | 操作ログ表示ページのメインロジック |
 | **logs.css** | 634 | ログページ専用スタイル |
-| **monitoring-dashboard.html** | 2,994 | 強化監視ダッシュボード（詳細モーダル表示・正確な演算システム追加） |
+| **monitoring-dashboard.html** | 2,994 | 強化監視ダッシュボード |
 | **sidebar.js** | 355 | サイドバーとモード管理機能 |
 | **sidebar.css** | 249 | サイドバー専用スタイル |
 | **styles.css** | 302 | 全体共通スタイル |
 | **manifest.json** | 83 | PWAマニフェスト |
 | **browserconfig.xml** | 9 | ブラウザ設定 |
 
-**合計: 24,035行**（最新計測）
+**合計: 約 25,000行**（最新計測）
 
 ### 🔗 依存関係図（v2.3 最新）
 ```mermaid
@@ -1569,7 +1548,7 @@ graph TD
     D -.->|独立| D
 ```
 
-#### システム全体の依存関係（v2.2最適化版）
+#### システム全体の依存関係（v2.3最新版）
 ```mermaid
 graph TB
     subgraph "最適化フロントエンド"
@@ -1615,7 +1594,7 @@ graph TB
     M -.->|独立| M
 ```
 
-#### データフロー（v2.2最適化版シーケンス図）
+#### データフロー（v2.3最新版シーケンス図）
 ```mermaid
 sequenceDiagram
     participant U as ユーザー
