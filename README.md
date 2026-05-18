@@ -97,8 +97,8 @@ graph TD
     end
 
     %% 通信経路の定義
-    API_Client ===| "分散HTTPS (POST / JSONP)" |==> doPost
-    Sync_V2 ===| "オンライン復帰時の一括同期" |==> doPost
+    API_Client == "分散HTTPS (POST / JSONP)" ==> doPost
+    Sync_V2 == "オンライン復帰時の一括同期" ==> doPost
 ```
 
 ---
@@ -209,33 +209,33 @@ sequenceDiagram
     participant Lock as GAS LockService
     participant Sheet as スプレッドシート (Seats)
     
-    FE->>GAS: reserveSeats(group, day, timeslot, selectedSeats)
+    FE->>GAS: "reserveSeats(group, day, timeslot, selectedSeats)"
     activate GAS
-    GAS->>Lock: getScriptLock()
-    GAS->>Lock: tryLock(15000)
+    GAS->>Lock: "getScriptLock()"
+    GAS->>Lock: "tryLock(15000)"
     activate Lock
     Note over Lock: 15秒間排他ロックを獲得試行
     
     alt ロック獲得成功
-        Lock-->>GAS: ロック獲得完了
-        GAS->>Sheet: A2:C列の値を取得 (getValues)
+        Lock-->>GAS: "ロック獲得完了"
+        GAS->>Sheet: "A2:C列の値を取得 (getValues)"
         Note over GAS: 選択された座席がすべて「空」であるかループ検証
         
         alt すべて「空」の場合
             loop 選択座席ごとに処理
-                GAS->>Sheet: C列に対象行を「予約済」に設定 (setValue)
+                GAS->>Sheet: "C列に対象行を「予約済」に設定 (setValue)"
             end
-            GAS->>Sheet: 変更内容を強制反映 (flush)
-            GAS-->>FE: { success: true, message: "予約完了..." }
+            GAS->>Sheet: "変更内容を強制反映 (flush)"
+            GAS-->>FE: "{ success: true, message: '予約完了...' }"
         else 既に他者に予約されている席がある場合
-            GAS-->>FE: { success: false, message: "既に他のお客様によって予約されています..." }
+            GAS-->>FE: "{ success: false, message: '既に他のお客様によって予約されています...' }"
         end
         
-        GAS->>Lock: releaseLock()
+        GAS->>Lock: "releaseLock()"
         deactivate Lock
     else ロック獲得失敗 (タイムアウト)
-        Lock-->>GAS: ロック獲得できず
-        GAS-->>FE: { success: false, message: "処理が大変混み合っています..." }
+        Lock-->>GAS: "ロック獲得できず"
+        GAS-->>FE: "{ success: false, message: '処理が大変混み合っています...' }"
     end
     deactivate GAS
 ```
@@ -261,10 +261,10 @@ sequenceDiagram
     participant GAS as Code.gs (assignWalkInConsecutiveSeats)
     participant Sheet as スプレッドシート (Seats)
     
-    FE->>GAS: assignWalkInConsecutiveSeats(group, day, timeslot, count)
+    FE->>GAS: "assignWalkInConsecutiveSeats(group, day, timeslot, count)"
     activate GAS
     Note over GAS: LockServiceによるトランザクションロック獲得 (7秒)
-    GAS->>Sheet: A2:C列(行・列・ステータス)を取得
+    GAS->>Sheet: "A2:C列(行・列・ステータス)を取得"
     Note over GAS: 空席探索アルゴリズム実行
     
     loop 各行 (A -> B -> C -> D -> E)
@@ -276,11 +276,11 @@ sequenceDiagram
     end
     
     alt 連続席が見つかった場合
-        GAS->>Sheet: 該当行のC〜E列に一括で ['予約済', '当日券_時間', ''] を設定
-        GAS->>Sheet: データを反映 (flush)
-        GAS-->>FE: { success: true, seatIds: [...] }
+        GAS->>Sheet: "該当行のC〜E列に一括で ['予約済', '当日券_時間', ''] を設定"
+        GAS->>Sheet: "データを反映 (flush)"
+        GAS-->>FE: "{ success: true, seatIds: [...] }"
     else 見つからなかった場合
-        GAS-->>FE: { success: false, message: "連続席が見つかりませんでした" }
+        GAS-->>FE: "{ success: false, message: '連続席が見つかりませんでした' }"
     end
     deactivate GAS
 ```
@@ -310,36 +310,36 @@ sequenceDiagram
     participant GAS as Code.gs (API)
 
     Note over UI, Sync: 【ネットワーク切断時】
-    UI->>Sync: 予約リクエスト (reserveSeats)
+    UI->>Sync: "予約リクエスト (reserveSeats)"
     Note over Sync: ネットワークオフラインを検知
-    Sync->>Storage: 操作をキューに保存 (offlineOperationQueue_v2)
+    Sync->>Storage: "操作をキューに保存 (offlineOperationQueue_v2)"
     Note over Sync: キューを優先度順に自動ソート (予約=優先度1)
-    Sync->>Storage: ローカルキャッシュ上の座席マップを「予約済」に書き換え
-    Sync->>BC: "queue-updated" メッセージ送信 (他タブへ同期)
-    Sync-->>UI: 擬似成功レスポンス (offline: true)
+    Sync->>Storage: "ローカルキャッシュ上の座席マップを「予約済」に書き換え"
+    Sync->>BC: "'queue-updated' メッセージ送信 (他タブへ同期)"
+    Sync-->>UI: "擬似成功レスポンス (offline: true)"
     Note over UI: UI上は「オフライン受付完了」となり処理継続
 
     Note over UI, Sync: 【オンライン復帰時】
-    Sync->>Sync: "online" イベント検知 / 接続確認ポーリング
-    Sync->>Sync: 排他ロック取得試行 (localStorageロック)
-    Sync->>BC: "sync-started" ブロードキャスト (他タブの同期衝突抑止)
+    Sync->>Sync: "'online' イベント検知 / 接続確認ポーリング"
+    Sync->>Sync: "排他ロック取得試行 (localStorageロック)"
+    Sync->>BC: "'sync-started' ブロードキャスト (他タブの同期衝突抑止)"
     
     loop キュー内の各操作
-        Sync->>Storage: キャッシュされたバージョン情報 (前提条件) をロード
-        Sync->>Sync: validatePrecondition(operation)
-        Note over Sync: ローカル操作時のキャッシュと最新キャッシュのバージョン比較
+        Sync->>Storage: "キャッシュされたバージョン情報 (前提条件) をロード"
+        Sync->>Sync: "validatePrecondition(operation)"
+        Note over Sync: ローカル操作時のキャッシュと最新キャッシュ of バージョン比較
         
         alt 整合性OK (競合なし)
-            Sync->>GAS: GAS API実行 (reserveSeats 等のオリジナル通信)
-            GAS-->>Sync: 処理結果 (success: true)
-            Sync->>Sync: 成功した操作をキューから削除
+            Sync->>GAS: "GAS API実行 (reserveSeats 等のオリジナル通信)"
+            GAS-->>Sync: "処理結果 (success: true)"
+            Sync->>Sync: "成功した操作をキューから削除"
         else 競合発生 (他者がオンライン中にその席を取っていた場合)
-            Sync->>Sync: 競合キューに退避 (resolveConflictsにて自動解決/警告トリガー)
+            Sync->>Sync: "競合キューに退避 (resolveConflictsにて自動解決/警告トリガー)"
         end
     end
     
-    Sync->>BC: "sync-finished" ブロードキャスト
-    Sync->>UI: 「同期完了」トースト通知表示
+    Sync->>BC: "'sync-finished' ブロードキャスト"
+    Sync->>UI: "「同期完了」トースト通知表示"
 ```
 
 1. **オフライン時の処理**:
@@ -362,7 +362,7 @@ graph TD
     A["API呼び出し要求 (GasAPI._callApi)"] --> B{"ネットワークはオンラインか?"}
     B -- No --> C["オフライン同期システムに処理を即時委譲"]
     B -- Yes --> D["APIUrlManager.getCurrentUrl() から現在のURLを取得"]
-    D --> E["JSONPリクエストの生成 & scriptタグ挿入"]
+    D --> E["JSONPリクエストの生成およびscriptタグ挿入"]
     E --> F{"20秒以内に正常応答あり?"}
     
     F -- Yes (正常) --> G["コールバック実行、scriptタグ削除、完了"]
@@ -397,28 +397,28 @@ sequenceDiagram
     participant GAS as Code.gs (ScriptProperties)
     participant Sheet as スプレッドシート (Seats)
 
-    Admin1->>GAS: initiateDangerCommand("purgeReservationsForShow", payload, expireSeconds=120)
+    Admin1->>GAS: "initiateDangerCommand('purgeReservationsForShow', payload, expireSeconds=120)"
     activate GAS
     Note over GAS: UUID トークンを生成
     Note over GAS: ScriptProperties に期限情報付でコマンドを一時保存
-    GAS-->>Admin1: { success: true, token: "UUID-XXXX-XXXX", expiresAt: "..." }
+    GAS-->>Admin1: "{ success: true, token: 'UUID-XXXX-XXXX', expiresAt: '...' }"
     deactivate GAS
     
     Note over Admin1: トークンを最高管理者 B に共有
 
-    Admin2->>GAS: confirmDangerCommand(token="UUID-XXXX-XXXX", password, confirmerId="AdminB_ID")
+    Admin2->>GAS: "confirmDangerCommand(token='UUID-XXXX-XXXX', password, confirmerId='AdminB_ID')"
     activate GAS
     Note over GAS: パスワード検証 (SUPERADMIN_PASSWORD)
     Note over GAS: トークンの有効期限と存在をチェック
     
     alt 1回目の承認 (承認数 < 2)
         Note over GAS: 承認者リストに記録して保存
-        GAS-->>Admin2: { success: true, executed: false, pending: 1 }
+        GAS-->>Admin2: "{ success: true, executed: false, pending: 1 }"
     else 2回目の承認完了 (承認数 >= 2)
         Note over GAS: 危険処理実行 (performDangerAction)
         GAS->>Sheet: SeatsシートのC〜E列をすべて「空」に一括クリア
         Note over GAS: トークンプロパティを完全消去
-        GAS-->>Admin2: { success: true, executed: true, result: "該当公演の情報を初期化しました" }
+        GAS-->>Admin2: "{ success: true, executed: true, result: '該当公演の情報を初期化しました' }"
     end
     deactivate GAS
 ```
