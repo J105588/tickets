@@ -5,6 +5,7 @@ const TARGET_SEAT_SHEET_NAME = "Seats";
 const LOG_SHEET_NAME = "ParentApplications";
 
 // 座席管理用スプレッドシートID（本体IDのみ）
+// 救済措置：https://drive.google.com/file/d/1khVpsEO3VFz_-z1RuuBxDruRqH6V21a2/view?usp=sharing
 const SEAT_SHEET_IDS = {
   // 1組
   "1-1-A": "105mJ7NiqErTuw-HTZ4DEeFzuwPU_Q7jF6T8sDz6GMLg",  // 1日目 1回目
