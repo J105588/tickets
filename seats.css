@@ -861,3 +861,57 @@ body.normal-mode .seat.unavailable .seat-name {
 
 body.normal-mode .seat.available { background: #28a745; }
 body.normal-mode .seat.available:hover { background: #218838; }
+
+/* カスタムダイアログ用CSS */
+.custom-dialog-content {
+    max-width: 400px;
+    padding: 25px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    text-align: left;
+    border: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.custom-dialog-message {
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 15px 0;
+    white-space: pre-line;
+    color: #495057;
+}
+.modal-buttons button {
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.modal-buttons button:active {
+    transform: scale(0.98);
+}
+.modal-buttons .cancel-btn {
+    padding: 10px 20px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    color: #495057;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+.modal-buttons .cancel-btn:hover {
+    background-color: #e2e6ea !important;
+    border-color: #dae0e5;
+    color: #212529;
+}
+.modal-buttons .ok-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background-color: #007bff;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+.modal-buttons .ok-btn:hover {
+    background-color: #0056b3 !important;
+}
+

@@ -429,11 +429,7 @@ function updateSeatMapWithMinimalData(minimalSeatMap) {
       const currentStatus = seatEl.dataset.status;
       if (currentStatus !== minimalData.status) {
         // ステータスが変更された場合のみ更新
-        seatEl.dataset.status = minimalData.status;
-        
-        // クラスを更新（CSSは `.seat.available` 等を参照）
-        seatEl.className = 'seat';
-        seatEl.classList.add(minimalData.status);
+        updateSeatClassesAndStatus(seatEl, minimalData.status, minimalData.name);
         
         // 色を更新
         updateSeatColor(seatEl, minimalData.status);
@@ -459,11 +455,7 @@ function updateSeatMapWithCompleteData(completeSeatMap) {
       const currentStatus = seatEl.dataset.status;
       if (currentStatus !== completeData.status) {
         // ステータスを更新
-        seatEl.dataset.status = completeData.status;
-        
-        // クラスを更新
-        seatEl.className = 'seat';
-        seatEl.classList.add(completeData.status);
+        updateSeatClassesAndStatus(seatEl, completeData.status, completeData.name);
         
         // 色を更新
         updateSeatColor(seatEl, completeData.status);
@@ -522,6 +514,15 @@ function createSeatElement(seatData) {
     seat.classList.add('checkin-selectable');
     seat.dataset.seatName = seatData.name || '';
   }
+
+  // 選択状態を復元
+  if (selectedSeats.includes(seatData.id)) {
+    if (isAdminMode) {
+      seat.classList.add('selected-for-checkin');
+    } else {
+      seat.classList.add('selected');
+    }
+  }
   
   // 最高管理者モード用にC、D、E列のデータを保存
   if (seatData.columnC !== undefined) {
@@ -555,7 +556,7 @@ function createSeatElement(seatData) {
 }
 
 // 座席クリック時の処理
-function handleSeatClick(seatData) {
+async function handleSeatClick(seatData) {
   const currentMode = localStorage.getItem('currentMode') || 'normal';
   const isAdminMode = currentMode === 'admin' || IS_ADMIN;
   const isSuperAdminMode = currentMode === 'superadmin';
@@ -568,7 +569,7 @@ function handleSeatClick(seatData) {
     handleAdminSeatClick(seatData);
   } else {
     // 通常モード：予約可能な座席を選択
-    handleNormalSeatClick(seatData);
+    await handleNormalSeatClick(seatData);
   }
 }
 
@@ -635,7 +636,7 @@ function handleAdminSeatClick(seatData) {
 }
 
 // 通常モードでの座席クリック処理
-function handleNormalSeatClick(seatData) {
+async function handleNormalSeatClick(seatData) {
   // 利用可能な座席のみ選択可能
   if (seatData.status !== 'available') {
     console.log('この座席は選択できません:', seatData.status);
@@ -647,7 +648,7 @@ function handleNormalSeatClick(seatData) {
       'unavailable': 'この座席は利用できません'
     };
     const message = statusMessages[seatData.status] || 'この座席は選択できません';
-    alert(message);
+    await showCustomAlert(message, '選択エラー');
     return;
   }
 
@@ -674,6 +675,49 @@ function handleNormalSeatClick(seatData) {
   console.log('選択された座席:', selectedSeats);
 }
 
+// 座席要素のクラスと状態をクリーンに更新するヘルパー
+function updateSeatClassesAndStatus(seatEl, status, name) {
+  const seatId = seatEl.dataset.id;
+  
+  // 状態値の設定
+  seatEl.dataset.status = status;
+  
+  // ステータスクラスの更新
+  const statusClasses = ['available', 'reserved', 'checked-in', 'unavailable', 'to-be-checked-in'];
+  statusClasses.forEach(cls => seatEl.classList.remove(cls));
+  seatEl.classList.add(status);
+  
+  // 管理者モード・チェックイン選択可能性の更新
+  const currentMode = localStorage.getItem('currentMode') || 'normal';
+  const isAdminMode = currentMode === 'admin' || IS_ADMIN;
+  
+  if (isAdminMode && (status === 'to-be-checked-in' || status === 'reserved')) {
+    seatEl.classList.add('checkin-selectable');
+    if (name) seatEl.dataset.seatName = name;
+  } else {
+    seatEl.classList.remove('checkin-selectable');
+  }
+  
+  // 選択状態の整合性チェック
+  if (status !== 'to-be-checked-in' && status !== 'reserved') {
+    seatEl.classList.remove('selected-for-checkin');
+    selectedSeats = selectedSeats.filter(id => id !== seatId);
+  }
+  if (status !== 'available') {
+    seatEl.classList.remove('selected');
+    selectedSeats = selectedSeats.filter(id => id !== seatId);
+  }
+  
+  // もしselectedSeatsに残っているなら、クラスを再度付与
+  if (selectedSeats.includes(seatId)) {
+    if (isAdminMode) {
+      seatEl.classList.add('selected-for-checkin');
+    } else {
+      seatEl.classList.add('selected');
+    }
+  }
+}
+
 // 選択された座席数の表示を更新
 function updateSelectedSeatsDisplay() {
   const submitButton = document.getElementById('submit-button');
@@ -688,11 +732,92 @@ function updateSelectedSeatsDisplay() {
   }
 }
 
+// カスタムアラートダイアログを表示する関数
+function showCustomAlert(message, title = 'お知らせ') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('custom-dialog-modal');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const messageEl = document.getElementById('custom-dialog-message');
+    const okBtn = document.getElementById('custom-dialog-ok-btn');
+    const cancelBtn = document.getElementById('custom-dialog-cancel-btn');
+
+    if (!modal || !messageEl || !okBtn) {
+      alert(message);
+      resolve();
+      return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    const handleOk = () => {
+      modal.classList.remove('show');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+      okBtn.removeEventListener('click', handleOk);
+      resolve();
+    };
+
+    okBtn.addEventListener('click', handleOk);
+    modal.style.display = 'flex';
+    modal.offsetHeight; // リフローを起こしてトランジションを有効にする
+    modal.classList.add('show');
+  });
+}
+
+// カスタム確認ダイアログを表示する関数
+function showCustomConfirm(message, title = '確認') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('custom-dialog-modal');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const messageEl = document.getElementById('custom-dialog-message');
+    const okBtn = document.getElementById('custom-dialog-ok-btn');
+    const cancelBtn = document.getElementById('custom-dialog-cancel-btn');
+
+    if (!modal || !messageEl || !okBtn || !cancelBtn) {
+      resolve(confirm(message));
+      return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    cancelBtn.style.display = 'block';
+
+    const handleOk = () => {
+      modal.classList.remove('show');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+      cleanup();
+      resolve(true);
+    };
+
+    const handleCancel = () => {
+      modal.classList.remove('show');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+      cleanup();
+      resolve(false);
+    };
+
+    const cleanup = () => {
+      okBtn.removeEventListener('click', handleOk);
+      cancelBtn.removeEventListener('click', handleCancel);
+    };
+
+    okBtn.addEventListener('click', handleOk);
+    cancelBtn.addEventListener('click', handleCancel);
+    
+    modal.style.display = 'flex';
+    modal.offsetHeight; // リフローを起こしてトランジションを有効にする
+    modal.classList.add('show');
+  });
+}
+
 // グローバル関数として設定
 window.showLoader = showLoader;
 window.toggleAutoRefresh = toggleAutoRefresh;
 window.checkInSelected = checkInSelected;
 window.confirmReservation = confirmReservation;
+window.showCustomAlert = showCustomAlert;
+window.showCustomConfirm = showCustomConfirm;
 window.promptForAdminPassword = promptForAdminPassword;
 window.toggleAutoRefreshSettings = toggleAutoRefreshSettings;
 window.closeAutoRefreshSettings = closeAutoRefreshSettings;
@@ -838,7 +963,7 @@ function promptForAdminPassword() {
 async function checkInSelected() {
   const selectedSeatElements = document.querySelectorAll('.seat.selected-for-checkin');
   if (selectedSeatElements.length === 0) {
-    alert('チェックインする座席を選択してください。');
+    await showCustomAlert('チェックインする座席を選択してください。', '警告');
     return;
   }
 
@@ -851,7 +976,7 @@ async function checkInSelected() {
   const seatList = selectedSeats.map(seat => `${seat.id}：${seat.name}`).join('\n');
   const confirmMessage = `以下の座席をチェックインしますか？\n\n${seatList}`;
   
-  if (!confirm(confirmMessage)) {
+  if (!await showCustomConfirm(confirmMessage, 'チェックインの確認')) {
     return;
   }
 
@@ -979,12 +1104,12 @@ async function checkInSelected() {
 // 予約確認・実行関数（最適化版）
 async function confirmReservation() {
   if (selectedSeats.length === 0) {
-    alert('予約する座席を選択してください。\n\n利用可能な座席（緑色）をクリックして選択してから、予約ボタンを押してください。');
+    await showCustomAlert('予約する座席を選択してください。\n\n利用可能な座席（緑色）をクリックして選択してから、予約ボタンを押してください。', '警告');
     return;
   }
 
   const confirmMessage = `以下の座席で予約しますか？\n\n${selectedSeats.join(', ')}`;
-  if (!confirm(confirmMessage)) {
+  if (!await showCustomConfirm(confirmMessage, '予約の確認')) {
     return;
   }
 
@@ -1226,7 +1351,7 @@ async function updateSeatData(seatId) {
   // 確認ダイアログを表示
   const confirmMessage = `座席 ${seatId} のデータを以下の内容で更新しますか？\n\nC列: ${columnC}\nD列: ${columnD}\nE列: ${columnE}`;
   
-  if (!confirm(confirmMessage)) {
+  if (!await showCustomConfirm(confirmMessage, '座席データの更新確認')) {
     return;
   }
   
@@ -1236,7 +1361,7 @@ async function updateSeatData(seatId) {
     const response = await GasAPI.updateSeatData(GROUP, DAY, ACTUAL_TIMESLOT, seatId, columnC, columnD, columnE);
     
     if (response.success) {
-      alert('座席データを更新しました！');
+      await showCustomAlert('座席データを更新しました！', '成功');
       closeSeatEditModal();
       
       // 最高管理者モードの座席選択状態をクリア
@@ -1255,11 +1380,11 @@ async function updateSeatData(seatId) {
         updateLastUpdateTime();
       }
     } else {
-      alert(`更新エラー：\n${response.message}`);
+      await showCustomAlert(`更新エラー：\n${response.message}`, 'エラー');
     }
   } catch (error) {
     console.error('座席データ更新エラー:', error);
-    alert(`更新エラー：\n${error.message}`);
+    await showCustomAlert(`更新エラー：\n${error.message}`, 'エラー');
   } finally {
     showLoader(false);
   }
@@ -1306,10 +1431,8 @@ function updateSeatElement(seatEl, seatData) {
   seatEl.dataset.columnC = seatData.columnC || '';
   seatEl.dataset.columnD = seatData.columnD || '';
   seatEl.dataset.columnE = seatData.columnE || '';
-  
   // クラスを更新
-  seatEl.className = 'seat';
-  seatEl.classList.add(seatData.status);
+  updateSeatClassesAndStatus(seatEl, seatData.status, seatData.name);
   
   // 座席名を更新
   const nameEl = seatEl.querySelector('.seat-name');
