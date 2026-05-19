@@ -1,0 +1,56 @@
+Date : 2026-05-20 00:25:58
+Directory : c:\dev\tickets-beta
+Total : 18 files,  -2539 codes, -279 comments, -428 blanks, all -3246 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| Markdown   |          1 |        330 |          0 |         56 |        386 |
+| CSS        |          1 |         52 |          0 |          2 |         54 |
+| HTML       |          2 |         22 |          0 |          3 |         25 |
+| JavaScript |         14 |     -2,943 |       -279 |       -489 |     -3,711 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                        | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                           |         18 |     -2,539 |       -279 |       -428 |     -3,246 |
+| . (Files)                                                   |          5 |        502 |          7 |         79 |        588 |
+| GAS                                                         |         13 |     -3,041 |       -286 |       -507 |     -3,834 |
+| GAS\core                                                    |          4 |     -2,186 |       -208 |       -372 |     -2,766 |
+| GAS\core\ver.7                                              |          4 |     -2,186 |       -208 |       -372 |     -2,766 |
+| GAS\reservation-again                                       |          3 |       -246 |        -19 |        -38 |       -303 |
+| GAS\reservation-again (Files)                               |          1 |       -190 |        -16 |        -31 |       -237 |
+| GAS\reservation-again\init                                  |          2 |        -56 |         -3 |         -7 |        -66 |
+| GAS\tickets-for-parents                                     |          4 |       -133 |        -15 |        -17 |       -165 |
+| GAS\tickets-for-parents (Files)                             |          2 |       -109 |        -13 |        -17 |       -139 |
+| GAS\tickets-for-parents\init                                |          2 |        -24 |         -2 |          0 |        -26 |
+| GAS\tickets-for-teachers                                    |          2 |       -476 |        -44 |        -80 |       -600 |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                    | language   | code       | comment    | blank      | total      |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| c:\dev\tickets-beta\GAS\core\ver.7\Code.gs                  | JavaScript |     -1,971 |       -169 |       -339 |     -2,479 |
+| c:\dev\tickets-beta\GAS\core\ver.7\SpreadsheetIds.gs        | JavaScript |        -83 |        -18 |        -18 |       -119 |
+| c:\dev\tickets-beta\GAS\core\ver.7\TimeSlotConfig.gs        | JavaScript |        -74 |        -16 |         -6 |        -96 |
+| c:\dev\tickets-beta\GAS\core\ver.7\system-setting.gs        | JavaScript |        -58 |         -5 |         -9 |        -72 |
+| c:\dev\tickets-beta\GAS\reservation-again\init\init-log.gs  | JavaScript |        -25 |         -2 |         -3 |        -30 |
+| c:\dev\tickets-beta\GAS\reservation-again\init\init-main.gs | JavaScript |        -31 |         -1 |         -4 |        -36 |
+| c:\dev\tickets-beta\GAS\reservation-again\system-main.gs    | JavaScript |       -190 |        -16 |        -31 |       -237 |
+| c:\dev\tickets-beta\GAS\tickets-for-parents\init\log.gs     | JavaScript |        -12 |         -1 |          0 |        -13 |
+| c:\dev\tickets-beta\GAS\tickets-for-parents\init\main.gs    | JavaScript |        -12 |         -1 |          0 |        -13 |
+| c:\dev\tickets-beta\GAS\tickets-for-parents\mail-check.gs   | JavaScript |        -32 |         -4 |         -8 |        -44 |
+| c:\dev\tickets-beta\GAS\tickets-for-parents\system-main.gs  | JavaScript |        -77 |         -9 |         -9 |        -95 |
+| c:\dev\tickets-beta\GAS\tickets-for-teachers\mail-check.gs  | JavaScript |       -208 |        -23 |        -44 |       -275 |
+| c:\dev\tickets-beta\GAS\tickets-for-teachers\system-main.gs | JavaScript |       -268 |        -21 |        -36 |       -325 |
+| c:\dev\tickets-beta\README.md                               | Markdown   |        330 |          0 |         56 |        386 |
+| c:\dev\tickets-beta\index.html                              | HTML       |         11 |          0 |          2 |         13 |
+| c:\dev\tickets-beta\seats-main.js                           | JavaScript |         98 |          7 |         18 |        123 |
+| c:\dev\tickets-beta\seats.css                               | CSS        |         52 |          0 |          2 |         54 |
+| c:\dev\tickets-beta\seats.html                              | HTML       |         11 |          0 |          1 |         12 |
+| Total                                                       |            |     -2,539 |       -279 |       -428 |     -3,246 |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
