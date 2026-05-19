@@ -137,8 +137,7 @@ c:\dev\tickets-beta
 ├── performance-monitor.js       <-- 通信時間、キャッシュヒット率、メモリ消費などのパフォーマンス測定器
 ├── ui-optimizer.js              <-- スクロール慣性、DOM再描画抑制、iOS Safariスクロールバグ修正などのUI最適化
 ├── sw.js / pwa-install.js       <-- サービスワーカーによる静的アセットのキャッシュと、PWAインストールプロンプト制御
-├── pwa-update.js                <-- PWAのバックグラウンド更新検知およびユーザーへの美麗な更新通知UI制御
-└── system-lock.js               <-- システム全体の予約受付ロックを管理。GAS API 'getSystemLock' と連動
+└── pwa-update.js                <-- PWAのバックグラウンド更新検知およびユーザーへの美麗な更新通知UI制御
 ```
 
 #### 1.3.1 プロジェクト規模
