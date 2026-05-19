@@ -140,17 +140,6 @@
         navigator.serviceWorker.register('./sw.js')
           .then((registration) => {
             console.log('SW registered: ', registration);
-            
-            // 更新チェック
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // 新しい更新が利用可能
-                  showUpdateNotification();
-                }
-              });
-            });
           })
           .catch((registrationError) => {
             console.log('SW registration failed: ', registrationError);
@@ -166,108 +155,7 @@
         }
       });
     }
-
-    // 更新通知を表示
-    function showUpdateNotification() {
-      const notification = document.createElement('div');
-      notification.className = 'update-notification';
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        z-index: 10000;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        font-weight: 500;
-        max-width: 350px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        animation: slideInRight 0.3s ease-out;
-      `;
-
-      notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 18px;">🔄</span>
-          <div style="flex: 1;">
-            <div style="font-weight: 600; margin-bottom: 4px;">更新が利用可能です</div>
-            <div style="font-size: 12px; opacity: 0.9;">新しいバージョンに更新しますか？</div>
-          </div>
-          <button onclick="applyUpdate()" style="
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-          " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
-            更新
-          </button>
-          <button onclick="this.parentElement.parentElement.remove()" style="
-            background: none;
-            border: none;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: background-color 0.2s;
-          " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='none'">
-            ×
-          </button>
-        </div>
-      `;
-
-      // アニメーション用のCSS
-      if (!document.getElementById('update-notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'update-notification-styles';
-        style.textContent = `
-          @keyframes slideInRight {
-            from {
-              transform: translateX(100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-
-      document.body.appendChild(notification);
-
-      // 10秒後に自動で消す
-      setTimeout(() => {
-        if (notification.parentElement) {
-          notification.remove();
-        }
-      }, 10000);
-    }
-
-    // 更新を適用
-    function applyUpdate() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(registration => {
-          if (registration && registration.waiting) {
-            // 新しいService Workerに更新を指示
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      }
-    }
+  </script>
 
     // URL管理システムの情報表示機能
     function refreshUrlInfo() {

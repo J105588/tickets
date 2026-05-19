@@ -863,6 +863,9 @@ body.normal-mode .seat.available { background: #28a745; }
 body.normal-mode .seat.available:hover { background: #218838; }
 
 /* カスタムダイアログ用CSS */
+#custom-dialog-modal {
+    z-index: 20000;
+}
 .custom-dialog-content {
     max-width: 400px;
     padding: 25px;

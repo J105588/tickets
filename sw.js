@@ -1,5 +1,5 @@
 // sw.js - 静的資産キャッシュとオフライン表示の強化版（PWA更新通知対応）
-const CACHE_NAME = 'tickets-optimized-v5';
+const CACHE_NAME = 'tickets-optimized-v6';
 // 自己修復（self-heal）機能のフラグ（デフォルトOFF。クライアントからメッセージでONにできる）
 let SELF_HEAL_ENABLED = false;
 // 最高管理者モードのクライアント（window client id の集合）

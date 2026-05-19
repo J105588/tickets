@@ -1,0 +1,10 @@
+"filename", "language", "HTML", "CSS", "JavaScript", "comment", "blank", "total"
+"c:\dev\tickets-beta\index.html", "HTML", -106, 0, 0, 0, -7, -113
+"c:\dev\tickets-beta\pwa-update.js", "JavaScript", 0, 0, 9, 1, 1, 11
+"c:\dev\tickets-beta\seats.css", "CSS", 0, 3, 0, 0, 0, 3
+"c:\dev\tickets-beta\seats.html", "HTML", -106, 0, 0, 0, -7, -113
+"c:\dev\tickets-beta\sidebar.js", "JavaScript", 0, 0, 43, 5, 3, 51
+"c:\dev\tickets-beta\styles.css", "CSS", 0, 4, 0, 0, 1, 5
+"c:\dev\tickets-beta\timeslot.html", "HTML", -105, 0, 0, 0, -7, -112
+"c:\dev\tickets-beta\walkin.html", "HTML", -105, 0, 0, 0, -7, -112
+"Total", "-", -422, 7, 52, 6, -23, -380

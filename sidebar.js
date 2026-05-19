@@ -59,6 +59,21 @@ function loadSidebar() {
         updateModeDisplay(); // 必要な関数を呼び出す
         updateNavigationAccess(); // ナビゲーションアクセス制限を更新
         try { applyModeFromUrl(); } catch (_) {}
+        
+        // モーダル全体にエンターキーで適用するイベントリスナーを追加
+        const modal = document.getElementById("mode-change-modal");
+        if (modal) {
+            modal.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    // キャンセルボタンなどにフォーカスがある場合は除く
+                    if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+                        return;
+                    }
+                    event.preventDefault();
+                    applyModeChange();
+                }
+            });
+        }
     }
 }
 
@@ -66,6 +81,14 @@ function showModeChangeModal() {
     const modal = document.getElementById("mode-change-modal");
     if (modal) {
         modal.classList.add('show');
+        // パスワード入力欄をクリアし、フォーカスをあてる
+        const passwordInput = document.getElementById("mode-password");
+        if (passwordInput) {
+            passwordInput.value = '';
+            setTimeout(() => {
+                try { passwordInput.focus(); } catch (_) {}
+            }, 100);
+        }
     }
 }
 
@@ -77,6 +100,32 @@ function closeModeModal() {
             modal.classList.remove('show');
             modal.classList.remove('fade-out');
         }, 300);
+    }
+}
+
+// モード切替時のローダー表示制御
+function showSidebarLoader(visible) {
+    let loader = document.getElementById('loading-modal');
+    if (!loader && visible) {
+        // 動的にローダーを作成してbodyに追加
+        loader = document.createElement('div');
+        loader.id = 'loading-modal';
+        loader.className = 'modal';
+        loader.innerHTML = `
+            <div class="modal-content" style="text-align: center;">
+                <div class="spinner"></div>
+                <p>処理中です...</p>
+            </div>
+        `;
+        document.body.appendChild(loader);
+    }
+    
+    if (loader) {
+        if (visible) {
+            loader.classList.add('show');
+        } else {
+            loader.classList.remove('show');
+        }
     }
 }
 
@@ -108,6 +157,7 @@ async function applyModeChange() {
     };
 
     disableModal(true);
+    showSidebarLoader(true);
 
     try {
         // 通常モードに戻る場合はパスワード検証をスキップ
@@ -166,6 +216,7 @@ async function applyModeChange() {
         try { audit.log('ui', 'mode_change', { from: localStorage.getItem('currentMode') || 'normal', to: selectedMode, success: false, error: error.message }); } catch (_) {}
     } finally {
         disableModal(false);
+        showSidebarLoader(false);
         _isApplyingModeChange = false;
     }
 }

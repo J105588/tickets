@@ -343,6 +343,17 @@ class PWAUpdateManager {
             // 更新中のロードモーダルを表示
             this.showUpdateLoadingModal();
 
+            // 全てのキャッシュを削除
+            if (window.caches) {
+                try {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(key => caches.delete(key)));
+                    console.log('[PWA Update] Discarded all caches successfully');
+                } catch (e) {
+                    console.warn('[PWA Update] Failed to discard caches:', e);
+                }
+            }
+
             // Service Workerに更新を指示
             if (this.registration && this.registration.waiting) {
                 this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });

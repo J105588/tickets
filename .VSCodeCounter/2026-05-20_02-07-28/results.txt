@@ -1,0 +1,72 @@
+Date : 2026-05-20 02:07:28
+Directory : c:\dev\tickets-beta
+Total : 40 files,  17926 codes, 1126 comments, 2846 blanks, all 21898 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| JavaScript |         24 |      9,726 |      1,126 |      1,653 |     12,505 |
+| HTML       |          7 |      4,643 |          0 |        602 |      5,245 |
+| CSS        |          6 |      2,881 |          0 |        448 |      3,329 |
+| Markdown   |          1 |        584 |          0 |        141 |        725 |
+| JSON       |          1 |         83 |          0 |          1 |         84 |
+| XML        |          1 |          9 |          0 |          1 |         10 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                          | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                             |         40 |     17,926 |      1,126 |      2,846 |     21,898 |
+| . (Files)                                                     |         39 |     17,423 |      1,126 |      2,790 |     21,339 |
+| GAS                                                           |          1 |        503 |          0 |         56 |        559 |
+| GAS\tickets-for-parents                                       |          1 |        503 |          0 |         56 |        559 |
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                      | language   | code       | comment    | blank      | total      |
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
+| c:\dev\tickets-beta\GAS\tickets-for-parents\parent-multi.html | HTML       |        503 |          0 |         56 |        559 |
+| c:\dev\tickets-beta\README.md                                 | Markdown   |        584 |          0 |        141 |        725 |
+| c:\dev\tickets-beta\api-cache.js                              | JavaScript |        212 |         31 |         49 |        292 |
+| c:\dev\tickets-beta\api.js                                    | JavaScript |        487 |         47 |         72 |        606 |
+| c:\dev\tickets-beta\audit-logger.js                           | JavaScript |        211 |         12 |         28 |        251 |
+| c:\dev\tickets-beta\browserconfig.xml                         | XML        |          9 |          0 |          1 |         10 |
+| c:\dev\tickets-beta\config.js                                 | JavaScript |        288 |         44 |         47 |        379 |
+| c:\dev\tickets-beta\enhanced-status-monitor.js                | JavaScript |        327 |         48 |         75 |        450 |
+| c:\dev\tickets-beta\error-handler.js                          | JavaScript |        169 |         13 |         27 |        209 |
+| c:\dev\tickets-beta\full-capacity-monitor.js                  | JavaScript |        197 |         28 |         44 |        269 |
+| c:\dev\tickets-beta\index-main.js                             | JavaScript |         14 |          3 |          4 |         21 |
+| c:\dev\tickets-beta\index.html                                | HTML       |        279 |          0 |         30 |        309 |
+| c:\dev\tickets-beta\logs-main.js                              | JavaScript |        674 |        108 |        127 |        909 |
+| c:\dev\tickets-beta\logs.css                                  | CSS        |        535 |          0 |        100 |        635 |
+| c:\dev\tickets-beta\logs.html                                 | HTML       |        322 |          0 |         22 |        344 |
+| c:\dev\tickets-beta\manifest.json                             | JSON       |         83 |          0 |          1 |         84 |
+| c:\dev\tickets-beta\monitoring-dashboard.html                 | HTML       |      2,672 |          0 |        402 |      3,074 |
+| c:\dev\tickets-beta\offline-sync-v2.css                       | CSS        |        776 |          0 |        121 |        897 |
+| c:\dev\tickets-beta\offline-sync-v2.js                        | JavaScript |      2,628 |        242 |        377 |      3,247 |
+| c:\dev\tickets-beta\offline-sync.js                           | JavaScript |        440 |         55 |         77 |        572 |
+| c:\dev\tickets-beta\optimized-api.js                          | JavaScript |        253 |         23 |         46 |        322 |
+| c:\dev\tickets-beta\optimized-loader.js                       | JavaScript |        125 |         12 |         27 |        164 |
+| c:\dev\tickets-beta\performance-monitor.js                    | JavaScript |        226 |         11 |         52 |        289 |
+| c:\dev\tickets-beta\pwa-install.js                            | JavaScript |        146 |         16 |         26 |        188 |
+| c:\dev\tickets-beta\pwa-update.js                             | JavaScript |        410 |         21 |         61 |        492 |
+| c:\dev\tickets-beta\seats-main.js                             | JavaScript |      1,384 |        245 |        277 |      1,906 |
+| c:\dev\tickets-beta\seats.css                                 | CSS        |        815 |          0 |        106 |        921 |
+| c:\dev\tickets-beta\seats.html                                | HTML       |        308 |          0 |         31 |        339 |
+| c:\dev\tickets-beta\sidebar.css                               | CSS        |        213 |          0 |         37 |        250 |
+| c:\dev\tickets-beta\sidebar.js                                | JavaScript |        357 |         22 |         39 |        418 |
+| c:\dev\tickets-beta\styles.css                                | CSS        |        270 |          0 |         38 |        308 |
+| c:\dev\tickets-beta\sw.js                                     | JavaScript |        176 |         26 |         17 |        219 |
+| c:\dev\tickets-beta\system-lock.js                            | JavaScript |         87 |         12 |         10 |        109 |
+| c:\dev\tickets-beta\timeslot-main.js                          | JavaScript |        141 |         27 |         34 |        202 |
+| c:\dev\tickets-beta\timeslot-schedules.js                     | JavaScript |        138 |          2 |          5 |        145 |
+| c:\dev\tickets-beta\timeslot.html                             | HTML       |        260 |          0 |         29 |        289 |
+| c:\dev\tickets-beta\ui-optimizer.js                           | JavaScript |        270 |         35 |         65 |        370 |
+| c:\dev\tickets-beta\walkin-main.js                            | JavaScript |        366 |         43 |         67 |        476 |
+| c:\dev\tickets-beta\walkin.css                                | CSS        |        272 |          0 |         46 |        318 |
+| c:\dev\tickets-beta\walkin.html                               | HTML       |        299 |          0 |         32 |        331 |
+| Total                                                         |            |     17,926 |      1,126 |      2,846 |     21,898 |
++---------------------------------------------------------------+------------+------------+------------+------------+------------+
